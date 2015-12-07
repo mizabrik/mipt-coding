@@ -8,13 +8,13 @@
 #include "skew_heap.h"
 
 template <typename Heap>
-clock_t test_heap(unsigned long count, unsigned seed, std::vector<int> &result);
+clock_t test_heap(unsigned count, unsigned seed, std::vector<int> &result);
 
 int main() {
   unsigned seed = time(nullptr);
 
   std::cout << "Enter number of operations" << std::endl;
-  unsigned long count = 0;
+  int count = 0;
   std::cin >> count;
 
   std::vector<int> skew;
@@ -49,8 +49,8 @@ int main() {
 }
 
 template <typename Heap>
-clock_t test_heap(unsigned long count, unsigned seed, std::vector<int> &result) {
-  enum class Command { kInsert, kExtract, kMeld, kCommandNum };
+clock_t test_heap(unsigned count, unsigned seed, std::vector<int> &result) {
+  enum class Command { kAddHeap, kInsert, kExtract, kMeld, kCommandNum };
 
   std::vector<Heap> heaps;
 
@@ -65,6 +65,14 @@ clock_t test_heap(unsigned long count, unsigned seed, std::vector<int> &result) 
     int key;
 
     switch (command) {
+      case Command::kAddHeap:
+        heaps.emplace_back();
+        heaps.back().Insert(rand());
+        ++total;
+
+        --count;
+        break;
+
       case Command::kInsert:
         if (heaps.size() == 0)
           heaps.emplace_back();
@@ -77,11 +85,11 @@ clock_t test_heap(unsigned long count, unsigned seed, std::vector<int> &result) 
         break;
 
       case Command::kExtract:
-        if (heaps.size() == 0)
+        if (total == 0 || heaps.size() == 0)
           continue;
 
         heap = rand() % heaps.size();
-        if (total == 0 || heaps[heap].size() == 0)
+        if (heaps[heap].size() == 0)
           continue;
 
 
