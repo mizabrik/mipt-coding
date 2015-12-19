@@ -3,48 +3,24 @@
 
 #include <memory>
 
+#include "order.h"
+
 class NaiveTree {
  public:
-  void Add(int key) {
-    if (root_ == nullptr) {
-      root_ = std::make_shared<Node>(key);
-      return;
-    }
+  void Insert(int key);
 
-    std::shared_ptr<Node> parent = root_;
-    do {
-      std::shared_ptr<Node> &new_parent  = key > parent->key
-                                         ? parent->right : parent->left;
-      if (new_parent == nullptr) {
-        new_parent = std::make_shared<Node>(key);
-        return;
-      }
-
-      parent = new_parent;
-    } while (true);
-  }
-
-  size_t Order() {
-    return NodeOrder(root_);
-  }
+  size_t Order() const;
 
  private:
   struct Node {
-    Node(int key) : key(key) {}
+    Node(int key);
 
     int key;
     std::shared_ptr<Node> left;
     std::shared_ptr<Node> right;
   };
 
-  size_t NodeOrder(std::shared_ptr<Node> node) {
-    std::size_t order = 0;
-
-    if (node != nullptr)
-      order = 1 + std::max(NodeOrder(node->left), NodeOrder(node->right));
-
-    return order;
-  }
+  friend std::size_t NodeOrder<>(const std::shared_ptr<Node> node);
 
   std::shared_ptr<Node> root_;
 };

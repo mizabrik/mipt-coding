@@ -1,19 +1,19 @@
 CC=g++
 CFLAGS=-c -Wall -std=c++14 -ggdb
 
-all: clean heaps-test
-
-run: heaps-test
-	./heaps-test
+all: clean height
 
 clean:
-	rm -f *.o heaps-test
+	rm -f *.o height
 
-debug: heaps
-	gdb heaps-test
+height: height.o treap.o naive.o
+	$(CC) -ggdb height.o treap.o naive.o -o height
 
-heaps-test: test.o
-	$(CC) -ggdb test.o -o heaps-test
+height.o: height.cc
+	$(CC) $(CFLAGS) height.cc
 
-test.o: test.cc
-	$(CC) $(CFLAGS) test.cc
+treap.o: treap.cc
+	$(CC) $(CFLAGS) treap.cc
+
+naive.o: naive.cc
+	$(CC) $(CFLAGS) naive.cc
