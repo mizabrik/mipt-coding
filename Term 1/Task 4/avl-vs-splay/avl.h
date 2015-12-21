@@ -17,10 +17,6 @@ class AvlTree {
   // Get element, which would take k'th place in sorted array of tree's keys
   int GetOrderStatistic(std::size_t k);
 
-  bool Check() {
-    return CheckNode(root_);
-  }
-
  private:
   struct Node {
     Node(int key) : key(key), height(1), size(1) {}
@@ -33,17 +29,6 @@ class AvlTree {
     std::unique_ptr<Node> right;
   };
 
-  bool CheckNode(std::unique_ptr<Node> &node) {
-    if (!node)
-      return true;
-
-    if ((!node->left || node->left->key <= node->key)
-        && (!node->right || node->right->key > node->key))
-      return CheckNode(node->left) && CheckNode(node->right);
-    else
-      return false;
-  }
-
   // Add node to tre
   static bool AddNode(std::unique_ptr<Node> &tree, std::unique_ptr<Node> &&node);
 
@@ -54,10 +39,10 @@ class AvlTree {
   static int TreeOrderStatistic(std::unique_ptr<Node> &tree, std::size_t k);
 
   // Remove minimal element from tree (used for deletion)
-  static std::unique_ptr<Node> && ExtractMin(std::unique_ptr<Node> &tree);
+  static std::unique_ptr<Node> ExtractMin(std::unique_ptr<Node> &tree);
 
   // Support tree properties after changes
-  static void RestoreBalance(std::unique_ptr<Node> &tree);
+  static void RestoreTree(std::unique_ptr<Node> &tree);
   static void UpdateHeight(std::unique_ptr<Node> &node);
 
   // Wrappers, which return real value or 0 for null

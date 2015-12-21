@@ -23,22 +23,5 @@ int main() {
     std::cout << tree.GetOrderStatistic(statistic) << std::endl;
   }
 
-    int seed;
-    std::cin >> seed;
-    srand(seed);
-  while(count) {
-    bool add = rand() % 2;
-    int number = rand() % 10 + 1;
-    if (add) {
-      std::cout << '+' << number << std::endl;
-      tree.Insert(number);
-    } else {
-      std::cout << '-' << number << std::endl;
-      tree.Remove(number);
-    }
-    std::cout << tree.Check() << std::endl;
-    --count;
-  }
-
   return 0;
 }

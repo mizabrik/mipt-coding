@@ -46,7 +46,7 @@ bool AvlTree::AddNode(std::unique_ptr<AvlTree::Node> &tree, std::unique_ptr<Node
 
   if (added) {
     ++tree->size;
-    RestoreBalance(tree);
+    RestoreTree(tree);
   }
 
   return added;
@@ -59,22 +59,24 @@ bool AvlTree::RemoveNode(std::unique_ptr<AvlTree::Node> &tree, int key) {
   if (key < tree->key) {
     if (!RemoveNode(tree->left, key))
       return false;
+    --tree->size;
   } else if (key > tree->key) {
     if (!RemoveNode(tree->right, key))
       return false;
+    --tree->size;
   } else {
     if (tree->right == nullptr) {
       tree = std::move(tree->left);
     } else {
       auto node = ExtractMin(tree->right);
-      node->left = std::move(tree->left);
+      node->left = tree->left ? std::move(tree->left) : nullptr;
       node->right = std::move(tree->right);
       node->size = TreeSize(tree) - 1;
 
       tree = std::move(node);
     }
   }
-  RestoreBalance(tree);
+  RestoreTree(tree);
 
   return true;
 }
@@ -89,24 +91,21 @@ int AvlTree::TreeOrderStatistic(std::unique_ptr<Node> &tree, std::size_t k) {
   }
 }
 
-std::unique_ptr<AvlTree::Node> && AvlTree::ExtractMin(std::unique_ptr<Node> &tree) {
+std::unique_ptr<AvlTree::Node> AvlTree::ExtractMin(std::unique_ptr<Node> &tree) {
   if (tree->left) {
     auto node = ExtractMin(tree->left);
     --tree->size;
-    RestoreBalance(tree);
+    RestoreTree(tree);
     return std::move(node);
   } else {
     auto min = std::move(tree);
-    tree = std::move(tree->right);
-    return std::move(min);
+    tree = std::move(min->right);
+    return min;
   }
 }
-#include <iostream>
-void AvlTree::RestoreBalance(std::unique_ptr<AvlTree::Node> &tree) {
-  UpdateHeight(tree);
 
-  if (TreeDifference(tree) > 2 || TreeDifference(tree) < -2)
-    std::cout << "Lol, " << TreeDifference(tree) << std::endl;
+void AvlTree::RestoreTree(std::unique_ptr<AvlTree::Node> &tree) {
+  UpdateHeight(tree);
 
   switch (TreeDifference(tree)) {
     case -2:
@@ -128,9 +127,6 @@ void AvlTree::RestoreBalance(std::unique_ptr<AvlTree::Node> &tree) {
     default:
       break;
   }
-  if (TreeDifference(tree) >= 2 || TreeDifference(tree) <= -2)
-    std::cout << "Lol2, " << TreeDifference(tree) << std::endl;
-
 }
 
 std::size_t AvlTree::TreeSize(std::unique_ptr<AvlTree::Node> &node) {
@@ -153,9 +149,8 @@ void AvlTree::UpdateHeight(std::unique_ptr<AvlTree::Node> &node) {
 
 void AvlTree::LeftRotation(std::unique_ptr<AvlTree::Node> &tree) {
   tree->size -= TreeSize(tree->right);
-  tree->right->size -= TreeSize(tree->right->left);
-  tree->size += TreeSize(tree->right->left);
   tree->right->size += TreeSize(tree);
+  tree->size += TreeSize(tree->right->left);
 
   auto tmp = std::move(tree);
   tree = std::move(tmp->right);
@@ -168,9 +163,8 @@ void AvlTree::LeftRotation(std::unique_ptr<AvlTree::Node> &tree) {
 
 void AvlTree::RightRotation(std::unique_ptr<AvlTree::Node> &tree) {
   tree->size -= TreeSize(tree->left);
-  tree->left->size -= TreeSize(tree->left->right);
-  tree->size += TreeSize(tree->left->right);
   tree->left->size += TreeSize(tree);
+  tree->size += TreeSize(tree->left->right);
 
   auto tmp = std::move(tree);
   tree = std::move(tmp->left);
