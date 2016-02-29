@@ -1,30 +1,28 @@
-#ifndef NEXT_PERMUTATION_H_
-#define NEXT_PERMUTATION_H_
+#ifndef TREAP_PERMUTATOR_H_
+#define TREAP_PERMUTATOR_H_
+
+#include "permutator.h"
 
 #include <cstdlib>
 #include <cassert>
 
 #include <vector>
 #include <memory>
-#include <type_traits>
 
 // Data type, which supports inserting, assigning values into array
 // and RSQ and next_permutation on range (reverse as a bonus!)
 // with time complexity O(log N)
 template<typename T>
-class NextPermutator {
-  static_assert(std::is_arithmetic<T>::value,
-                "Only arithmetic values are supported");
+class TreapPermutator : public PermutatorInterface<T> {
  public:
-  NextPermutator() {
+  TreapPermutator() {
     std::srand(42); // Chosen by fair dice roll, guaranteed to be random
   }
 
-  NextPermutator(const NextPermutator &other) = delete;
+  TreapPermutator(const TreapPermutator &other) = delete;
 
-  NextPermutator operator =(const NextPermutator &other) = delete;
+  TreapPermutator operator =(const TreapPermutator &other) = delete;
 
-  // Insert value at given position
   void Insert(unsigned position, T value) {
     assert(position <= TreeSize(root_));
     
@@ -38,13 +36,11 @@ class NextPermutator {
     return TreeSize(root_);
   }
 
-  // Assign value at given position
   void Set(unsigned position, T value) {
     assert(position < TreeSize(root_));
     SetValue(*root_, position, value);
   }
 
-  // Change interval [begin, end) to it's next permutation
   bool NextPermutation(unsigned begin, unsigned end) {
     assert(begin <= end);
     assert(end <= TreeSize(root_));
@@ -77,7 +73,6 @@ class NextPermutator {
       ReverseTree(*root_);
   }
 
-  // Dump current array values into vector
   std::vector<T> Dump() {
     std::vector<T> values;
 
@@ -86,7 +81,6 @@ class NextPermutator {
     return values;
   }
 
-  // Get RSQ on [begin, end)
   T GetSum(unsigned begin, unsigned end) {
     assert(begin <= end);
     assert(end <= TreeSize(root_));
@@ -169,6 +163,8 @@ class NextPermutator {
   std::pair<NodePtr, NodePtr> SplitTree(NodePtr tree, unsigned n) {
     if (n == 0)
       return std::make_pair(NodePtr(nullptr), std::move(tree));
+    if (n == TreeSize(tree))
+      return std::make_pair(std::move(tree), NodePtr(nullptr));
 
     PushReverse(*tree);
 
@@ -308,4 +304,4 @@ class NextPermutator {
   }
 };
 
-#endif // NEXT_PERMUTATION_H_
+#endif // TREAP_PERMUTATOR_H_

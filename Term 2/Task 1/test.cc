@@ -4,13 +4,18 @@
 #include <vector>
 #include <algorithm>
 
-#include "next_permutation.h"
+#include "permutator.h"
+#include "naive_permutator.h"
+#include "treap_permutator.h"
 
 int kRange = 64;
 
 enum class TestType { kNaive, kTree, kVerify };
 
-clock_t TestNP(unsigned count, unsigned seed, TestType);
+clock_t TestTime(PermutatorInterface<int> &permutator,
+                 unsigned count, unsigned seed);
+clock_t Verify(PermutatorInterface<int> &a, PermutatorInterface<int> &b,
+                 unsigned count, unsigned seed);
 
 int main() {
   unsigned seed = time(nullptr);
@@ -26,34 +31,33 @@ int main() {
   clock_t time;
 
   std::cout << "Testing naive realization... ";
-  time = TestNP(count, seed, TestType::kNaive);
+  std::cout.flush();
+  NaivePermutator<int> naive;
+  time = TestTime(naive, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
   std::cout << "Testing tree realization... ";
-  time = TestNP(count, seed, TestType::kTree);
+  std::cout.flush();
+  TreapPermutator<int> treap;
+  time = TestTime(treap, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
-  try {
-    std::cout << "Verifying results... ";
-    TestNP(count, seed, TestType::kVerify);
-    std::cout << "OK." << std::endl;
-  } catch (std::runtime_error e) {
-    std::cout << e.what() << std::endl;
-  }
+  NaivePermutator<int> a;
+  TreapPermutator<int> b;
+  std::cout << "Verifying results... ";
+  std::cout.flush();
+  std::cout << (Verify(a, b, count, seed) ? "OK." : "Results mismatch.")
+      << std::endl;
 
   return 0;
 }
 
-clock_t TestNP(unsigned count, unsigned seed, TestType type) {
+clock_t TestTime(PermutatorInterface<int> &permutator,
+                 unsigned count, unsigned seed) {
   enum class Command { kInsert, kSet, kPermute, kCommandNum };
 
   srand(seed);
   unsigned total = 0;
-
-  NextPermutator<int> tree;
-  std::vector<int> dump;
-
-  std::vector<int> naive;
 
   clock_t start = clock();
   while (count) {
@@ -65,23 +69,8 @@ clock_t TestNP(unsigned count, unsigned seed, TestType type) {
       case Command::kInsert:
         position = std::rand() % (total + 1);
         value = std::rand() % kRange;
-        switch (type) {
-          case TestType::kNaive:
-            naive.insert(naive.begin() + position, value);
-            break;
-
-          case TestType::kTree:
-            tree.Insert(position, value);
-            break;
-
-          case TestType::kVerify:
-            naive.insert(naive.begin() + position, value);
-            tree.Insert(position, value);
-            dump = tree.Dump();
-            if (naive != dump)
-              throw std::runtime_error("Mismatch on insert");
-            break;
-        }
+        permutator.Insert(position, value);
+        
         ++total;
 
         --count;
@@ -93,23 +82,7 @@ clock_t TestNP(unsigned count, unsigned seed, TestType type) {
           continue;
         position = std::rand() % total;
         value = std::rand() % kRange;
-        switch (type) {
-          case TestType::kNaive:
-            naive[position] = value;
-            break;
-
-          case TestType::kTree:
-            tree.Set(position, value);
-            break;
-
-          case TestType::kVerify:
-            naive[position] = value;
-            tree.Set(position, value);
-            dump = tree.Dump();
-            if (naive != dump)
-              throw std::runtime_error("Mismatch on set");
-            break;
-        }
+        permutator.Set(position, value);
 
         --count;
 
@@ -119,49 +92,9 @@ clock_t TestNP(unsigned count, unsigned seed, TestType type) {
         if (total == 0)
           continue;
 
-//        begin = rand() % total;
-//        end = begin + (rand() % (total - begin));
-        begin = 0;
-        end = total;
-
-        switch (type) {
-          case TestType::kNaive:
-            std::next_permutation(naive.begin() + begin, naive.begin() + end);
-            break;
-
-          case TestType::kTree:
-            tree.NextPermutation(begin, end);
-            break;
-
-          case TestType::kVerify:
-            std::next_permutation(naive.begin() + begin, naive.begin() + end);
-            tree.NextPermutation(begin, end);
-            dump = tree.Dump();
-            if (naive != dump) {
-              std::cout << std::endl;
-              std::cout << begin << ' ' << end << std::endl;
-              std::cout << "Naive result:" << std::endl;
-              for (auto e : naive)
-                std::cout << e << ' ';
-              std::cout << std::endl;
-              std::cout << "Tree result:" << std::endl;
-              for (auto e : dump)
-                std::cout << e << ' ';
-              std::cout << std::endl;
-              std::cout << "Got from:" << std::endl;
-              std::prev_permutation(naive.begin() + begin, naive.begin() + end);
-              for (auto e : naive)
-                std::cout << e << ' ';
-              std::cout << std::endl;
-              std::cout << "Got from:" << std::endl;
-              std::next_permutation(naive.begin() + begin, naive.begin() + end);
-              for (auto e : naive)
-                std::cout << e << ' ';
-              std::cout << std::endl;
-              throw std::runtime_error("Mismatch on permute");
-            }
-            break;
-        }
+        begin = rand() % total;
+        end = begin + (rand() % (total - begin));
+        permutator.NextPermutation(begin, end);
 
         --count;
 
@@ -174,4 +107,68 @@ clock_t TestNP(unsigned count, unsigned seed, TestType type) {
   clock_t end = clock();
 
   return end - start;
+}
+
+clock_t Verify(PermutatorInterface<int> &a, PermutatorInterface<int> &b,
+                 unsigned count, unsigned seed) {
+  enum class Command { kInsert, kSet, kPermute, kCommandNum };
+
+  srand(seed);
+  unsigned total = 0;
+
+  while (count) {
+    Command command = static_cast<Command>(rand() % static_cast<int>(Command::kCommandNum));
+    unsigned position, begin, end;
+    int value;
+
+    switch (command) {
+      case Command::kInsert:
+        position = std::rand() % (total + 1);
+        value = std::rand() % kRange;
+        a.Insert(position, value);
+        b.Insert(position, value);
+        if (a.Dump() != b.Dump())
+          return false;
+        
+        ++total;
+
+        --count;
+
+        break;
+
+      case Command::kSet:
+        if (total == 0)
+          continue;
+        position = std::rand() % total;
+        value = std::rand() % kRange;
+        a.Set(position, value);
+        b.Set(position, value);
+        if (a.Dump() != b.Dump())
+          return false;
+
+        --count;
+
+        break;
+
+      case Command::kPermute:
+        if (total == 0)
+          continue;
+
+        begin = rand() % total;
+        end = begin + (rand() % (total - begin));
+        a.NextPermutation(begin, end);
+        b.NextPermutation(begin, end);
+        if (a.Dump() != b.Dump())
+          return false;
+
+        --count;
+
+        break;
+      
+      default:
+        continue;
+    }
+  }
+
+  return true;
 }
