@@ -34,6 +34,10 @@ class NextPermutator {
     root_ = MergeTrees(std::move(root_), std::move(subtrees.second));
   }
 
+  unsigned Size() {
+    return TreeSize(root_);
+  }
+
   // Assign value at given position
   void Set(unsigned position, T value) {
     assert(position < TreeSize(root_));
@@ -118,12 +122,12 @@ class NextPermutator {
     Node(T value, int weight)
       : value(value),
         sum(value),
-        size(1),
         leftmost(value),
         rightmost(value),
         prefix{1, value},
         suffix{0, value},
         reversed(false),
+        size(1),
         weight(weight) {}
 
     T value;
@@ -134,7 +138,7 @@ class NextPermutator {
     Suffix suffix;
     bool reversed;
 
-    int size;
+    unsigned size;
     int weight;
 
     NodePtr left;
@@ -163,9 +167,8 @@ class NextPermutator {
   }
 
   std::pair<NodePtr, NodePtr> SplitTree(NodePtr tree, unsigned n) {
-    if (n == 0) {
+    if (n == 0)
       return std::make_pair(NodePtr(nullptr), std::move(tree));
-    }
 
     PushReverse(*tree);
 
@@ -203,7 +206,7 @@ class NextPermutator {
   }
 
   // Node parametrs access helpers
-  int TreeSize(const NodePtr &tree) {
+  unsigned TreeSize(const NodePtr &tree) {
     return tree ? tree->size : 0;
   }
   int TreeSum(const NodePtr &tree) {
@@ -299,7 +302,7 @@ class NextPermutator {
     } else if (tree.right) {
       return TreeSize(tree.left) + 1 + FindBiggerThan(*tree.right, value);
     } else {
-      return 1;
+      return tree.size;
     }
     return 0;
   }
