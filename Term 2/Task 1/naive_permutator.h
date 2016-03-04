@@ -37,6 +37,11 @@ class NaivePermutator : public PermutatorInterface<T> {
 
     return sum;
   }
+  
+  void Add(unsigned begin, unsigned end, T value) {
+    for (auto it = data_.begin() + begin; it != data_.begin() + end; ++it)
+      *it += value;
+  }
 
  private:
   std::vector<T> data_;

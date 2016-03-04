@@ -37,11 +37,11 @@ int main() {
   time = TestTime(naive, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
-  std::cout << "Testing treap realization... ";
+  /*std::cout << "Testing treap realization... ";
   std::cout.flush();
   TreapPermutator<int> treap;
   time = TestTime(treap, count, seed);
-  std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
+  std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;*/
 
   std::cout << "Testing splay realization... ";
   std::cout.flush();
@@ -49,12 +49,12 @@ int main() {
   time = TestTime(splay, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
-  NaivePermutator<int> a;
+  /*NaivePermutator<int> a;
   TreapPermutator<int> b;
   std::cout << "Verifying treap... ";
   std::cout.flush();
   std::cout << (Verify(a, b, count, seed) ? "OK." : "Something's wrong.")
-      << std::endl;
+      << std::endl;*/
 
   NaivePermutator<int> c;
   SplayPermutator<int> d;
@@ -68,7 +68,7 @@ int main() {
 
 clock_t TestTime(PermutatorInterface<int> &permutator,
                  unsigned count, unsigned seed) {
-  enum class Command { kInsert, kSet, kPermute, kCommandNum };
+  enum class Command { kInsert, kSet, kPermute, kAdd, kCommandNum };
 
   srand(seed);
   unsigned total = 0;
@@ -102,6 +102,17 @@ clock_t TestTime(PermutatorInterface<int> &permutator,
 
         break;
 
+      case Command::kAdd:
+        if (total == 0)
+          continue;
+
+        begin = rand() % total;
+        end = begin + (rand() % (total - begin));
+        value = rand() % kRange;
+        permutator.Add(begin, end, value);
+
+        --count;
+
       case Command::kPermute:
         if (total == 0)
           continue;
@@ -125,7 +136,7 @@ clock_t TestTime(PermutatorInterface<int> &permutator,
 
 clock_t Verify(PermutatorInterface<int> &a, PermutatorInterface<int> &b,
                  unsigned count, unsigned seed) {
-  enum class Command { kInsert, kSet, kPermute, kCommandNum };
+  enum class Command { kInsert, kSet, kPermute, kAdd, kCommandNum };
 
   srand(seed);
   unsigned total = 0;
@@ -172,6 +183,22 @@ clock_t Verify(PermutatorInterface<int> &a, PermutatorInterface<int> &b,
         end = begin + (rand() % (total - begin));
         a.NextPermutation(begin, end);
         b.NextPermutation(begin, end);
+        if (a.Dump() != b.Dump())
+          return false;
+
+        --count;
+
+        break;
+
+      case Command::kAdd:
+        if (total == 0)
+          continue;
+
+        begin = rand() % total;
+        end = begin + (rand() % (total - begin));
+        value = rand() % kRange;
+        a.Add(begin, end, value);
+        b.Add(begin, end, value);
         if (a.Dump() != b.Dump())
           return false;
 
