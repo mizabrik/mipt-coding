@@ -7,6 +7,7 @@
 #include "permutator.h"
 #include "naive_permutator.h"
 #include "treap_permutator.h"
+#include "splay_permutator.h"
 
 int kRange = 64;
 
@@ -36,17 +37,30 @@ int main() {
   time = TestTime(naive, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
-  std::cout << "Testing tree realization... ";
+  std::cout << "Testing treap realization... ";
   std::cout.flush();
   TreapPermutator<int> treap;
   time = TestTime(treap, count, seed);
   std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
 
+  std::cout << "Testing splay realization... ";
+  std::cout.flush();
+  SplayPermutator<int> splay;
+  time = TestTime(splay, count, seed);
+  std::cout << ((double) time / CLOCKS_PER_SEC) << std::endl;
+
   NaivePermutator<int> a;
   TreapPermutator<int> b;
-  std::cout << "Verifying results... ";
+  std::cout << "Verifying treap... ";
   std::cout.flush();
-  std::cout << (Verify(a, b, count, seed) ? "OK." : "Results mismatch.")
+  std::cout << (Verify(a, b, count, seed) ? "OK." : "Something's wrong.")
+      << std::endl;
+
+  NaivePermutator<int> c;
+  SplayPermutator<int> d;
+  std::cout << "Verifying splay... ";
+  std::cout.flush();
+  std::cout << (Verify(c, d, count, seed) ? "OK." : "Something's wrong.")
       << std::endl;
 
   return 0;

@@ -15,29 +15,23 @@ class PermutatorInterface {
   static_assert(std::is_arithmetic<T>::value,
                 "Only arithmetic values are supported");
  public:
-  PermutatorInterface() = default;
-
-  PermutatorInterface(const PermutatorInterface &other) = delete;
-
-  PermutatorInterface operator =(const PermutatorInterface &other) = delete;
-
   // Insert value at given position
-  virtual void Insert(unsigned position, T value);
+  virtual void Insert(unsigned position, T value) = 0;
 
   // Get array size
-  virtual unsigned Size();
+  virtual unsigned Size() = 0;
 
   // Assign value at given position
-  virtual void Set(unsigned position, T value);
+  virtual void Set(unsigned position, T value) = 0;
 
   // Change interval [begin, end) to it's next permutation
-  virtual bool NextPermutation(unsigned begin, unsigned end);
+  virtual bool NextPermutation(unsigned begin, unsigned end) = 0;
 
   // Dump current array values into vector
-  virtual std::vector<T> Dump();
+  virtual std::vector<T> Dump() = 0;
 
   // Get RSQ on [begin, end)
-  virtual T GetSum(unsigned begin, unsigned end);
+  virtual T GetSum(unsigned begin, unsigned end) = 0;
 
   virtual ~PermutatorInterface() {};
 };
