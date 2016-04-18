@@ -32,6 +32,9 @@ class PermutatorInterface {
 
   // Get RSQ on [begin, end)
   virtual T GetSum(unsigned begin, unsigned end) = 0;
+ 
+  // Add value to every element in interval [begin, end) 
+  virtual void Add(unsigned begin, unsigned end, T value) = 0;
 
   virtual ~PermutatorInterface() {};
 };

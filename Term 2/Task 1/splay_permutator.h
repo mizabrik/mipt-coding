@@ -83,6 +83,23 @@ class SplayPermutator : public PermutatorInterface<T> {
     return values;
   }
 
+  void Add(unsigned begin, unsigned end, T value) {
+    assert(begin <= end);
+    assert(end <= TreeSize(root_));
+
+    if (begin == end)
+      return;
+
+    auto right_split = SplitTree(std::move(root_), end);
+    auto left_split = SplitTree(std::move(right_split.first), begin);
+
+    IncreaseTree(*left_split.second, value);
+
+    root_ = MergeTrees(MergeTrees(std::move(left_split.first),
+                                  std::move(left_split.second)),
+                       std::move(right_split.second));
+  }
+
   T GetSum(unsigned begin, unsigned end) {
     assert(begin <= end);
     assert(end <= TreeSize(root_));
@@ -118,6 +135,7 @@ class SplayPermutator : public PermutatorInterface<T> {
     Node(T value)
       : value(value),
         sum(value),
+        added(0),
         leftmost(value),
         rightmost(value),
         prefix{1, value},
@@ -127,6 +145,7 @@ class SplayPermutator : public PermutatorInterface<T> {
 
     T value;
     T sum;
+    T added;
     T leftmost;
     T rightmost;
     Prefix prefix;
@@ -146,12 +165,12 @@ class SplayPermutator : public PermutatorInterface<T> {
   enum class Orientation { kLeft, kRight };
 
   void ZigTree(NodePtr &tree, Orientation orientation) {
-    PushReverse(*tree);
+    PushUpdates(*tree);
     NodePtr new_tree;
 
     switch (orientation) {
       case Orientation::kLeft:
-        PushReverse(*tree->left);
+        PushUpdates(*tree->left);
 
         new_tree = std::move(tree->left);
         tree->left = std::move(new_tree->right);
@@ -162,7 +181,7 @@ class SplayPermutator : public PermutatorInterface<T> {
         break;
 
       case Orientation::kRight:
-        PushReverse(*tree->right);
+        PushUpdates(*tree->right);
 
         new_tree = std::move(tree->right);
         tree->right = std::move(new_tree->left);
@@ -182,7 +201,7 @@ class SplayPermutator : public PermutatorInterface<T> {
   }
 
   void ZigZagTree(NodePtr &tree, Orientation orientation) {
-    PushReverse(*tree);
+    PushUpdates(*tree);
     switch (orientation) {
       case Orientation::kLeft:
         ZigTree(tree->left, Orientation::kRight);
@@ -202,16 +221,16 @@ class SplayPermutator : public PermutatorInterface<T> {
     using PathStep = std::pair<std::reference_wrapper<NodePtr>, Orientation>;
 
     std::vector<PathStep> path;
-    PushReverse(*tree.get());
+    PushUpdates(*tree.get());
     while (TreeSize(tree.get()->left) != k) {
       if (k < TreeSize(tree.get()->left)) {
         path.emplace_back(tree, Orientation::kLeft);
-        PushReverse(*tree.get()->left);
+        PushUpdates(*tree.get()->left);
         tree = tree.get()->left;
       } else {
         k -= TreeSize(tree.get()->left) + 1;
         path.emplace_back(tree, Orientation::kRight);
-        PushReverse(*tree.get()->right);
+        PushUpdates(*tree.get()->right);
         tree = tree.get()->right;
       }
     }
@@ -250,7 +269,7 @@ class SplayPermutator : public PermutatorInterface<T> {
 
     Splay(tree, n - 1);
     std::pair<NodePtr, NodePtr> result;
-    PushReverse(*tree);
+    PushUpdates(*tree);
     result.second = std::move(tree->right);
     UpdateTree(*tree);
     result.first = std::move(tree);
@@ -276,7 +295,7 @@ class SplayPermutator : public PermutatorInterface<T> {
   }
 
   void InOrderDump(Node &tree, std::vector<T> &values) {
-    PushReverse(tree);
+    PushUpdates(tree);
 
     if (tree.left)
       InOrderDump(*tree.left, values);
@@ -326,9 +345,19 @@ class SplayPermutator : public PermutatorInterface<T> {
     std::swap(tree.leftmost, tree.rightmost);
   }
 
+  void IncreaseTree(Node &tree, T value) {
+    tree.value += value;
+    tree.sum += tree.size * value;
+    tree.added = value;
+    tree.leftmost += value;
+    tree.rightmost += value;
+    tree.prefix.max += value;
+    tree.suffix.max += value;
+  }
+
   // Move reversed state from node to it's children to do the actual reverse
   // (on one level)
-  void PushReverse(Node &tree) {
+  void PushUpdates(Node &tree) {
     if (tree.reversed) {
       std::swap(tree.left, tree.right);
       tree.reversed = false;
@@ -336,6 +365,14 @@ class SplayPermutator : public PermutatorInterface<T> {
         ReverseTree(*tree.left);
       if (tree.right)
         ReverseTree(*tree.right);
+    }
+
+    if (tree.added) {
+      if (tree.left)
+        IncreaseTree(*tree.left, tree.added);
+      if (tree.right)
+        IncreaseTree(*tree.right, tree.added);
+      tree.added = 0;
     }
   }
 
@@ -355,7 +392,7 @@ class SplayPermutator : public PermutatorInterface<T> {
 
   // Used for NextPermutation; supposes, that values are sorted.
   unsigned FindBiggerThan(Node &tree, T value) {
-    PushReverse(tree);
+    PushUpdates(tree);
 
     if (tree.value > value) {
       return tree.left ? FindBiggerThan(*tree.left, value) : 0;
