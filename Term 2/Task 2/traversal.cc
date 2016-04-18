@@ -31,18 +31,21 @@ void TraverseBfs(const Graph &graph, Callback on_enter, Callback on_leave) {
   std::function<void(Graph::Vertex)> Traverse = [&](Graph::Vertex vertex) {
     std::queue<Graph::Vertex> queue;
     queue.push(vertex);
+    visited[vertex] = true;
 
     while (!queue.empty()) {
       Graph::Vertex vertex = queue.front();
       queue.pop();
-      visited[vertex] = true;
+      on_enter(vertex);
 
       for (auto neighbour : graph.GetNeighbours(vertex)) {
-        on_enter(vertex);
-        if (!visited[neighbour])
+        if (!visited[neighbour]) {
           queue.push(neighbour);
-        on_leave(vertex);
+          visited[neighbour] = true;
+        }
       }
+
+      on_leave(vertex);
     }
   };
 
