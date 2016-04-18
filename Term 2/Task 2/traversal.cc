@@ -6,8 +6,8 @@
 
 #include "graph.h"
 
-void TraverseDfs(const Graph &graph, callback on_enter, callback on_leave) {
-  std::vector<bool> visited(graph.GetSize());
+void TraverseDfs(const Graph &graph, Callback on_enter, Callback on_leave) {
+  std::vector<bool> visited(graph.GetSize(), false);
 
   std::function<void(Graph::Vertex)> Traverse = [&](Graph::Vertex vertex) {
     visited[vertex] = true;
@@ -25,8 +25,8 @@ void TraverseDfs(const Graph &graph, callback on_enter, callback on_leave) {
       Traverse(vertex);
 }
 
-void TraverseBfs(const Graph &graph, callback on_enter, callback on_leave) {
-  std::vector<bool> visited(graph.GetSize());
+void TraverseBfs(const Graph &graph, Callback on_enter, Callback on_leave) {
+  std::vector<bool> visited(graph.GetSize(), false);
 
   std::function<void(Graph::Vertex)> Traverse = [&](Graph::Vertex vertex) {
     std::queue<Graph::Vertex> queue;
@@ -36,13 +36,13 @@ void TraverseBfs(const Graph &graph, callback on_enter, callback on_leave) {
       Graph::Vertex vertex = queue.front();
       queue.pop();
       visited[vertex] = true;
-      on_enter(vertex);
 
-      for (auto neighbour : graph.GetNeighbours(vertex))
+      for (auto neighbour : graph.GetNeighbours(vertex)) {
+        on_enter(vertex);
         if (!visited[neighbour])
           queue.push(neighbour);
-
-      on_leave(vertex);
+        on_leave(vertex);
+      }
     }
   };
 

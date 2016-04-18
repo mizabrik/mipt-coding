@@ -5,11 +5,12 @@
 
 #include "graph.h"
 
-using callback = std::function<void(Graph::Vertex)>;
+using Callback = std::function<void(Graph::Vertex)>;
+using Traverse = std::function<void(const Graph &, Callback, Callback)>;
 
 
-void TraverseDfs(const Graph &graph, callback on_enter, callback on_leave);
+void TraverseDfs(const Graph &graph, Callback on_enter, Callback on_leave);
 
-void TraverseBfs(const Graph &graph, callback on_enter, callback on_leave);
+void TraverseBfs(const Graph &graph, Callback on_enter, Callback on_leave);
 
 #endif // TRAVERSAL_H_
