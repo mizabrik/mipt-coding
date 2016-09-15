@@ -1,0 +1,42 @@
+\documentclass[a4paper]{paper} 
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}  
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{listings}
+\sectionfont{\large\sf\bfseries\color{black!70!blue}} 
+\title{Алгоритм петерсона}
+\vspace{-2cm}
+\author{Александр Васильев, 597} 
+
+\renewcommand*{\epsilon}{\varepsilon}
+\lstset{language=Pascal}
+
+\begin{document} 
+\maketitle
+
+\begin{lstlisting}
+def lock(t):
+    victim = t
+    want[t] = True
+
+    while want[1 - t] and victim == t:
+        pass
+\end{lstlisting}
+Данная реализация не гарантирует взаимного исключения в следующей ситуации
+(начальное состояние --- \lstinline$victim = 0; want = [False, False]$):
+\begin{enumerate}
+\item Поток $1$: \lstinline$victim = 1$ (\lstinline$victim = 1; want = [False, False]$).
+\item Поток $0$: \lstinline$victim = 0$ (\lstinline$victim = 0; want = [False, False]$).
+\item Поток $0$: \lstinline$want[0] = True$ (\lstinline$victim = 0; want = [True, False]$).
+\item Поток $0$: \lstinline$want[1] == False$, поток входит в критическую секцию.
+\item Поток $1$: \lstinline$want[1] = True$ (\lstinline$victim = 0; want = [True, True]$).
+\item Поток $1$: \lstinline$victim == 0$, поток входит в критическую секцию.
+\end{enumerate}
+
+\end{document}

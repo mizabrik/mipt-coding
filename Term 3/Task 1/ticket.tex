@@ -1,0 +1,33 @@
+\documentclass[a4paper]{paper} 
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}  
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{hyperref}
+\sectionfont{\large\sf\bfseries\color{black!70!blue}} 
+\title{Ticket spinlock}
+\vspace{-2cm}
+\author{Александр Васильев, 597} 
+
+\renewcommand*{\epsilon}{\varepsilon}
+\lstset{language=C++}
+
+\begin{document} 
+\maketitle
+
+Проблемы с произовдительностью начнутся, когда число потоков превысит
+число потоков исполняющихся параллельно. Тогда может случиться, что spinlcok
+будет разблокированн, но поток со следующим номером будет находиться в
+конце очереди, тогда всем потокам придётся тратить своё время в ожидании до
+того, как планировщик дойдёт до нашего избранника.
+
+Test-and-set spinlock же не подвержен этой проблеме потому, что сразу после
+разблокировки его займёт поток-везунчик, который исполняется на данный момент.
+Цена честности --- это производительность :(
+\end{document}

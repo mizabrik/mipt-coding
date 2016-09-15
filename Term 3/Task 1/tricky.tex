@@ -1,0 +1,57 @@
+\documentclass[a4paper]{paper} 
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}  
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{hyperref}
+\sectionfont{\large\sf\bfseries\color{black!70!blue}} 
+\title{Tricky mutex}
+\vspace{-2cm}
+\author{Александр Васильев, 597} 
+
+\renewcommand*{\epsilon}{\varepsilon}
+\lstset{language=C++}
+
+\begin{document} 
+\maketitle
+
+\begin{lstlisting}
+class tricky_mutex {
+public:
+ tricky_mutex() : thread_count(0)
+ {}
+ void lock() {
+ while (thread_count.fetch_add(1) > 0) {
+ thread_count.fetch_sub(1);
+ }
+ }
+ void unlock() {
+ thread_count.fetch_sub(1);
+ }
+private:
+ std::atomic<int> thread_count;
+};
+\end{lstlisting}
+Данная реализация не гарантирует свободы от блокировки в следующей ситуации
+(начальное состояние --- \lstinline$thread_count == 0$):
+\begin{enumerate}
+\item Поток $0$: \lstinline$fetch_add$ (\lstinline$thread_count == 1$) [lock].
+\item Поток $0$ входит в критическую секцию.
+\item Поток $1$: \lstinline$fetch_add$ (\lstinline$thread_count == 2$) [lock].
+\item Поток $0$ выходит из критической секции.
+\item Поток $0$: \lstinline$fetch_sub$ (\lstinline$thread_count == 1$) [unlock].
+\item\label{deadlock1} Поток $0$: \lstinline$fetch_add$ (\lstinline$thread_count == 2$) [lock].
+\item\label{deadlock2} Поток $1$: \lstinline$fetch_sub$ (\lstinline$thread_count == 1$) [lock].
+\item\label{deadlock3} Поток $1$: \lstinline$fetch_add$ (\lstinline$thread_count == 2$) [lock].
+\item\label{deadlock4} Поток $0$: \lstinline$fetch_sub$ (\lstinline$thread_count == 1$) [lock].
+\item Повторение \autoref{deadlock1}, \autoref{deadlock2}, \autoref{deadlock3}
+	и \autoref{deadlock4} до бесконечности.
+\end{enumerate}
+
+\end{document}
