@@ -1,0 +1,83 @@
+\documentclass[a4paper]{paper} 
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}  
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{listings}
+\sectionfont{\large\sf\bfseries\color{black!70!blue}} 
+\title{Идеальное паросочетание}
+\vspace{-2cm}
+\author{Александр Васильев, 597} 
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{euscript}
+\usepackage{mathalfa}
+\usepackage{esvect}
+
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Теорема}
+\newtheorem{proposition}{Утверждение}
+\newtheorem{lemma}{Лемма}
+\newtheorem*{corollary}{Следствие}
+\newtheorem*{fact}{Факт}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Определение}
+
+\renewcommand*{\epsilon}{\varepsilon}
+\lstset{language=Pascal}
+
+\newcommand{\To}{\Rightarrow}
+\newcommand{\oT}{\Leftarrow}
+
+\begin{document} 
+\maketitle
+\begin{definition}
+Пусть дан граф $G = (V, E)$, $X \subseteq V$.
+Тогда $N(X)$ --- это множество соседей вершин из $X$.
+\end{definition}
+\begin{theorem}[Холла]
+Пусть $G = (V, E)$ — двудольный граф с долями $L$ и $R$,
+тогда паросочетание размера $|L|$ существует тогда и только тогда,
+когда для любого $A \subseteq L$, верно: $|A| \le |N(A)|$.
+\end{theorem}
+\begin{proof}~
+\begin{description}
+\item[$\Rightarrow$]
+Существует паросочетание размера $|L| \To$ каждая вершина из $L$
+соединена с какой-то другой $\To$ $|N(A)| \ge |A|$.
+\item[$\Leftarrow$]
+Заметим, что мы можем получить максимальное паросочетание с помощью нахождения
+максимального потока: добавим исток $s$ и сток $t$, проведём рёбра $c = 1$
+из $s$ в вершины $L$ и из $R$ в $t$, установим ребру $(u \in L, v \in R)$
+пропускную способность $1$. Тогда насыщенные max flow рёбра
+начального графа и представляют собой максимальное паросочетание:
+по определению потока сумма по исходящим рёбрам из вершины $u \in L$
+будет равна сумме по входящим, т. е. $\le 1$, симметрично для $v \in R$.
+С другой стороны, аналогично, любое паросочетание задаёт поток, и его величина ---
+это количество рёбер в паросочетании, а потому максимальному паросочетанию будет
+соответствовать максимальный поток.
+Итак, докажем от противного: пусть в $G$ нет идеального паросочетания, т. е.
+$f_{\max} < |L|$. По теореме Форда-Фалкерсона, $f_{\max}$ равна величине
+минимального разреза, т. е. существует разрез $(S, T)$ что
+$cap(S,T) < |L|$. Пусть существует ребро
+$(u, v)$ (в изначальном графе), что $u \in S$, $v \in T$.
+Из двудольности следует, что $v \in R$, тогда добавив $v$ в $S$ мы
+не увеличим $cap(S,T)$: из $v$ исходит только одно ребро $(v, t)$,
+и его стоимость компенсируется устранением $(u, v)$ с разреза.
+Итак, для любого ребра $(u, v)$ $u \in S \To v \in S$. Тогда, очевидно,
+для $L_S = L \cap S$, $L_T = L \cap T$ и $R_S = R \cap S$ получаем
+$cap(S, T) = |L_T| + |R_S| \le |L| = |L_S| + |L_T|$, т. е.
+$|R_S| \le |L_S|$. Из того же утверждения о рёбрах следует, что
+$N(L_S) \subseteq R_S$, т. е. $|N(L_S)| \le R_S \le L_S$.
+\end{description}
+\end{proof}
+\end{document}
