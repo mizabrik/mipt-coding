@@ -34,6 +34,8 @@ class Ray {
 
   Point GetPoint(const Real &distance) const;
 
+  Ray Mirror(const Point &p, const Vector &n) const;
+
   Point origin() const;
   Vector direction() const;
 
@@ -41,6 +43,14 @@ class Ray {
   Point origin_;
   Vector direction_;
 };
+
+struct Box {
+  Real min_x, max_x;
+  Real min_y, max_y;
+  Real min_z, max_z;
+};
+
+Box BoxUnion(const Box &a, const Box &b);
 
 Vector operator -(const Point &p, const Point &q);
 

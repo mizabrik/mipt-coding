@@ -21,32 +21,10 @@ sf::Image RayTracer::Render(Point observer, Screen screen,
 
   for (unsigned int x = 0; x < width; ++x) {
     for (unsigned int y = 0; y < height; ++y) {
-      Point pixel = screen.position + (screen.x / (2. * width)) * (1 + 2 * x)
-                                    + (screen.y / (2. * height)) * (1 + 2 * y);
+      Point pixel = screen.position + screen.x  * ((1 + 2 * x) / (2. * width))
+                                    + screen.y * ((1 + 2 * y) / (2. * height));
       Ray ray(pixel, pixel - observer);
-      Point intersection;
-      Entity *entity = Trace(ray, &intersection);
-      if (!entity)
-        continue;
-
-      auto color = GetColor(entity, intersection);
-      if (entity->alpha > 0) {
-        auto n = entity->Normal(intersection);
-        Ray mirrored_ray(intersection,
-                         ray.direction() - 2 * Dot(ray.direction(), n) * n);
-        Point mirrored;
-        Entity *mirrored_entity = Trace(mirrored_ray, &mirrored);
-        sf::Color mirrored_color = sf::Color::Black;
-        if (mirrored_entity)
-            mirrored_color = GetColor(mirrored_entity, mirrored);
-        if (x == 450 && y == 300) {
-          std::cout << (int)mirrored_color.r << std::endl;
-          std::cout << (int)mirrored_color.g << std::endl;
-          std::cout << (int)mirrored_color.b << std::endl;
-        }
-        color = MixColors(color, mirrored_color, 1 - entity->alpha);
-      }
-      image.setPixel(x, y, color);
+      image.setPixel(x, y, GetColor(ray, 4));
     }
   }
 
@@ -82,30 +60,57 @@ Real RayTracer::GetIlluminance(Point p, Vector normal) {
     if (p != q)
       continue;
 
-    illuminance += source.intensity * Dot(normal, diff).abs() / Length(diff);
+    Real angle_cos = Dot(normal, diff).abs() / Length(diff);
+    if (angle_cos > 0)
+      illuminance += source.intensity * angle_cos;
   }
 
   return illuminance;
 }
 
-sf::Color RayTracer::GetColor(Entity *entity, Point p) {
-  double illuminance = GetIlluminance(p, entity->Normal(p)).value();
+sf::Color RayTracer::GetColor(Ray ray, unsigned int depth) {
+  Point intersection;
+  Entity *entity = Trace(ray, &intersection);
+  if (!entity)
+    return sf::Color::Black;
+  auto normal = entity->Normal(intersection);
 
-  sf::Color base = entity->GetColor(p);
-  sf::Color color;
-  color.r = std::min(255, (int) std::round(base.r * illuminance));
-  color.g = std::min(255, (int) std::round(base.g * illuminance));
-  color.b = std::min(255, (int) std::round(base.b * illuminance));
+  if (depth == 0) {
+    double illuminance = GetIlluminance(intersection, normal).value();
+    return illuminance * entity->GetColor(intersection);
+  }
 
-  return color;
-}
+  double alpha = entity->alpha;
+  Color mirrored_color;
+  if (alpha > 0) {
+    Ray mirrored_ray = ray.Mirror(intersection, normal);
+    mirrored_color = GetColor(mirrored_ray, depth - 1);
+  }
 
-sf::Color RayTracer::MixColors(sf::Color a, sf::Color b, double alpha) {
-  sf::Color mix;
+  Color base = Color::Black;
+  if (entity->refraction) {
+    Real cos_phi = Dot(ray.direction(), normal);
+    double k; // outside / inside
+    if (cos_phi < 0) {
+      cos_phi = -cos_phi;
+      k = entity->refraction;
+    } else {
+      k = 1 / entity->refraction;
+      normal = -normal;
+    }
 
-  mix.r = (int) std::round(alpha * a.r + (1 - alpha) * b.r);
-  mix.g = (int) std::round(alpha * a.g + (1 - alpha) * b.g);
-  mix.b = (int) std::round(alpha * a.b + (1 - alpha) * b.b);
+    Real cos2_psi = 1 - k * k * (1 - cos_phi * cos_phi);
+    if (cos2_psi > 0) {
+      auto refracted = k * ray.direction() + (cos_phi * k - cos2_psi.Sqrt()) * normal;
+      Ray refracted_ray(intersection, refracted);
+      base = GetColor(refracted_ray, depth - 1);
+    } else {
+      alpha = 1;
+    }
+  } else {
+    double illuminance = GetIlluminance(intersection, normal).value();
+    base = illuminance * entity->GetColor(intersection);
+  }
 
-  return mix;
+  return (1 - alpha) * base + alpha * mirrored_color;
 }

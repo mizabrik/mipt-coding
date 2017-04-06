@@ -16,6 +16,7 @@ class Entity {
   virtual ~Entity() {};
 
   double alpha = 0;
+  double refraction = 0;
 };
 
 #endif // ENTITY_H_

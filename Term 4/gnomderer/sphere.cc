@@ -15,7 +15,7 @@ bool Sphere::Intersection(Ray ray, Point *intersection) {
   Real c = Length2(ray.origin() - center_) - r_ * r_;
 
   Real qr_d = hf_b * hf_b - c;
-  if (qr_d <= 0) {
+  if (qr_d.sign() < 0) {
     return false;
   }
 

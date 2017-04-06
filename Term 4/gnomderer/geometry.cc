@@ -19,6 +19,18 @@ Point Ray::GetPoint(const Real &distance) const {
   return origin() + distance * direction();
 }
 
+Ray Ray::Mirror(const Point &p, const Vector &n) const {
+  return Ray(p, direction() - 2 * Dot(direction(), n) * n);
+}
+
+Box BoxUnion(const Box &a, const Box &b) {
+  return Box{
+    std::min(a.min_x, b.min_x), std::max(a.max_x, b.max_x),
+    std::min(a.min_y, b.min_y), std::max(a.max_y, b.max_y),
+    std::min(a.min_z, b.min_z), std::max(a.max_z, b.max_z)
+  };
+}
+
 bool operator ==(const Vector &a, const Vector &b) {
   return a.x == b.x && a.y == b.y && a.z == b.z;
 }

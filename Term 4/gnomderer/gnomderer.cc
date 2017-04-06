@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Image.hpp>
 #include <iostream>
 
 #include "geometry.h"
@@ -9,6 +10,21 @@
 
 #include <limits>
 
+sf::Image draw() {
+  RayTracer::Screen screen{Point{-10, 10, 10}, Vector{20, 0, 0}, Vector{0, 0, -15}};
+
+  std::vector<Entity *> scene(2);
+  scene[0] = new Sphere(Point{5, 20, 0}, 5, sf::Color(0, 0, 255));
+  scene[1] = new Quadrangle(Point{10, -30, -30}, Point{10, -30, 30},
+                                 Point{10, 30, 30}, Point{10, 30, -30}, sf::Color::White);
+  scene[1]->alpha = 0.5;
+
+  RayTracer tracer(scene, 1);
+  //tracer.AddLightSource(Point{-10, 0, 0}, 5);
+
+  return tracer.Render(Point{0, -10, 2.5}, screen, 800, 600);
+}
+
 int main(int argc, char **argv) {
   unsigned int w = 800, h = 600;
   sf::RenderWindow window(sf::VideoMode(w, h), "Gnomderer");
@@ -17,20 +33,32 @@ int main(int argc, char **argv) {
   //scene.push_back(new Sphere(Point{0, 0, 20}, 4, sf::Color::Green));
   //scene.push_back(new Sphere(Point{-2, 0, 10}, 1, sf::Color::Red));
   //scene.push_back(new Triangle(Point{2, 2, 5}, Point{4, 2, 5}, Point{5, 2, 10}, sf::Color::Blue));
-  scene.push_back(new Sphere(Point{0, 0, -5}, 2, sf::Color::Red));
-  scene.push_back(new Quadrangle(Point{-2, -2, 5}, Point{0, -2, 5}, Point{0, 2, 5}, Point{-2, 2, 5}, sf::Color::Green));
-  scene.push_back(new Quadrangle(Point{0, -2, 5}, Point{2, -2, 5}, Point{2, 2, 5}, Point{0, 2, 5}, sf::Color::Green));
-  scene.back()->alpha = 0.8;
+  scene.push_back(new Sphere(Point{0, -1, 10}, 1, sf::Color::Red));
+  //scene.push_back(new Quadrangle(Point{-1, -2, 10}, Point{1, -2, 10},
+  //                               Point{1, 0, 10}, Point{-1, 0, 10}, sf::Color(200, 200, 200)));
+  scene.back()->refraction = 0.5;
+  scene.push_back(new Quadrangle(Point{5, -2, 15}, Point{-5, -2, 15},
+                                 Point{-5, -2, -5}, Point{5, -2, -5}, sf::Color(200, 200, 200)));
+  scene.back()->alpha = 0;
+  scene.push_back(new Quadrangle(Point{5, -2, 15}, Point{-5, -2, 15},
+                                 Point{-5, 10, 15}, Point{5, 10, 15}, sf::Color::Green));
+  scene.push_back(new Quadrangle(Point{-5, -2, 15}, Point{-5, 10, 15},
+                                 Point{-5, 10, -5}, Point{-5, -2, -5}, sf::Color::Red));
+  scene.push_back(new Quadrangle(Point{5, -2, 15}, Point{5, 10, 15},
+                                 Point{5, 10, -5}, Point{5, -2, -5}, sf::Color::Blue));
+  scene.push_back(new Quadrangle(Point{5, -2, -5}, Point{-5, -2, -5},
+                                 Point{-5, 10, -5}, Point{5, 10, -5}, sf::Color::Yellow));
 
-  Point observer{0, 0, -5};
+  Point observer{0, 0, -12};
   RayTracer::Screen screen{Point{-2, 1.5, 0}, Vector{4, 0, 0}, Vector{0, -3, 0}};
 
-  RayTracer tracer(scene, 0.1);
+  RayTracer tracer(scene, 0.3);
   //tracer.AddLightSource(Point{-4, 0, 0}, 0.7);
   //tracer.AddLightSource(Point{-3, 0, 0}, 0.5);
-  tracer.AddLightSource(Point{0, 0, 0}, 0.5);
+  tracer.AddLightSource(Point{-5, 3, 0}, 2);
 
   auto image = tracer.Render(observer, screen, w, h);
+  //auto image = draw();
   sf::Texture texture;
   texture.loadFromImage(image);
   sf::Sprite sprite(texture);

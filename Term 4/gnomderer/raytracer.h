@@ -5,6 +5,7 @@
 
 #include <SFML/Graphics/Image.hpp>
 
+#include "color.h"
 #include "geometry.h"
 #include "entity.h"
 
@@ -33,9 +34,7 @@ class RayTracer {
 
   Real GetIlluminance(Point p, Vector normal);
 
-  sf::Color GetColor(Entity *entity, Point p);
-
-  sf::Color MixColors(sf::Color a, sf::Color b, double alpha);
+  Color GetColor(Ray ray, unsigned int depth);
 
   std::vector<Entity *> scene_;
   std::vector<LightSource> light_sources_;
