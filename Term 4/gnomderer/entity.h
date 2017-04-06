@@ -14,6 +14,8 @@ class Entity {
   virtual sf::Color GetColor(Point p) = 0;
 
   virtual ~Entity() {};
+
+  double alpha = 0;
 };
 
 #endif // ENTITY_H_

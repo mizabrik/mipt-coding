@@ -35,6 +35,8 @@ class RayTracer {
 
   sf::Color GetColor(Entity *entity, Point p);
 
+  sf::Color MixColors(sf::Color a, sf::Color b, double alpha);
+
   std::vector<Entity *> scene_;
   std::vector<LightSource> light_sources_;
   Real base_illuminance_;
