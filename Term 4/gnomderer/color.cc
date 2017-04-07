@@ -7,6 +7,8 @@ Color & operator *=(Color &color, double x) {
   color.r = std::min(255LL, (long long) std::round(color.r * x));
   color.g = std::min(255LL, (long long) std::round(color.g * x));
   color.b = std::min(255LL, (long long) std::round(color.b * x));
+
+  return color;
 }
 
 Color operator *(const Color &color, double x) {

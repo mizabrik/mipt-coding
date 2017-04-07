@@ -7,7 +7,20 @@ Triangle::Triangle(Point a, Point b, Point c, sf::Color color)
       ab_(b - a),
       ac_(c - a),
       normal_(Normed(Cross(ab_, ac_))),
-      color_(color) {}
+      color_(color) {
+  box_ = Box{
+    {
+      std::min(a.x, std::min(b.x, c.x)),
+      std::min(a.y, std::min(b.y, c.y)),
+      std::min(a.z, std::min(b.z, c.z))
+    },
+    {
+      std::max(a.x, std::max(b.x, c.x)),
+      std::max(a.y, std::max(b.y, c.y)),
+      std::max(a.z, std::max(b.z, c.z))
+    }
+  };
+}
 
 Vector Triangle::Normal(Point p) {
   return normal_;

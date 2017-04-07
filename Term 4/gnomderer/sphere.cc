@@ -3,7 +3,12 @@
 #include "geometry.h"
 
 Sphere::Sphere(Point center, Real r, sf::Color color)
-    : center_(center), r_(r), color_(color) {}
+    : center_(center), r_(r), color_(color) {
+  box_ = Box{
+    {center.x - r, center.y - r, center.z - r},
+    {center.x + r, center.y + r, center.z + r}
+  };
+}
 
 Vector Sphere::Normal(Point p) {
   return Normed(p - center_);

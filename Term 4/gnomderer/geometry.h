@@ -1,6 +1,8 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+#include <array>
+
 #include "real.h"
 
 struct Point {
@@ -44,10 +46,26 @@ class Ray {
   Vector direction_;
 };
 
+struct SimplePlane {
+  unsigned int axis;
+  Real position;
+
+  Real Intersection(Ray ray);
+};
+
 struct Box {
-  Real min_x, max_x;
-  Real min_y, max_y;
-  Real min_z, max_z;
+  std::array<Real, 3> max;
+  std::array<Real, 3> min;
+
+  std::array<Real, 3> Dimensions() const;
+
+  Box Before(SimplePlane split) const;
+  Box After(SimplePlane split) const;
+
+  SimplePlane LeftPlane(unsigned int axis) const;
+  SimplePlane RightPlane(unsigned int axis) const;
+
+  bool Intersection(const Ray &ray, Real *t_in, Real *t_out) const;
 };
 
 Box BoxUnion(const Box &a, const Box &b);

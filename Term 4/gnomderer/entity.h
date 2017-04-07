@@ -13,10 +13,15 @@ class Entity {
   
   virtual sf::Color GetColor(Point p) = 0;
 
+  virtual Box BoundingBox() const;
+
   virtual ~Entity() {};
 
   double alpha = 0;
   double refraction = 0;
+
+ protected:
+  Box box_;
 };
 
 #endif // ENTITY_H_

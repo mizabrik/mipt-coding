@@ -23,12 +23,93 @@ Ray Ray::Mirror(const Point &p, const Vector &n) const {
   return Ray(p, direction() - 2 * Dot(direction(), n) * n);
 }
 
+std::array<Real, 3> Box::Dimensions() const {
+  std::array<Real, 3> result;
+  
+  for (unsigned int i = 0; i < 3; ++i) {
+    result[i] = max[i] - min[i];
+  }
+
+  return result;
+}
+
 Box BoxUnion(const Box &a, const Box &b) {
-  return Box{
-    std::min(a.min_x, b.min_x), std::max(a.max_x, b.max_x),
-    std::min(a.min_y, b.min_y), std::max(a.max_y, b.max_y),
-    std::min(a.min_z, b.min_z), std::max(a.max_z, b.max_z)
-  };
+  Box result;
+
+  for (unsigned int i = 0; i < 3; ++i) {
+    result.min[i] = std::min(a.min[i], b.min[i]);
+    result.max[i] = std::max(a.max[i], b.max[i]);
+  }
+  
+  return result;
+}
+
+Box Box::Before(SimplePlane split) const {
+  Box result = *this;
+  result.max[split.axis] = split.position;
+  return result;
+}
+
+Box Box::After(SimplePlane split) const {
+  Box result = *this;
+  result.min[split.axis] = split.position;
+  return result;
+}
+
+SimplePlane Box::LeftPlane(unsigned int axis) const {
+  return SimplePlane{axis, min[axis]};
+}
+SimplePlane Box::RightPlane(unsigned int axis) const {
+  return SimplePlane{axis, max[axis]};
+}
+
+bool Box::Intersection(const Ray &ray, Real *t_in, Real *t_out) const {
+  Real tx1 = LeftPlane(0).Intersection(ray);
+  Real tx2 = RightPlane(0).Intersection(ray);
+
+  Real tmin = std::min(tx1, tx2);
+  Real tmax = std::max(tx1, tx2);
+
+  Real ty1 = LeftPlane(1).Intersection(ray);
+  Real ty2 = RightPlane(1).Intersection(ray);
+
+  tmin = std::max(tmin, std::min(ty1, ty2));
+  tmax = std::min(tmax, std::max(ty1, ty2));
+
+  Real tz1 = LeftPlane(2).Intersection(ray);
+  Real tz2 = RightPlane(2).Intersection(ray);
+
+  tmin = std::max(tmin, std::min(tz1, tz2));
+  tmax = std::min(tmax, std::max(tz1, tz2));
+
+  if (tmax > tmin) {
+    *t_in = tmin;
+    *t_out = tmax;
+    return true;
+  } else {
+    return false;
+  }
+}
+  
+Real SimplePlane::Intersection(Ray ray) {
+  Real origin, direction;
+
+  switch (axis) {
+    case 0:
+      origin = ray.origin().x;
+      direction = ray.direction().x;
+      break;
+    case 1:
+      origin = ray.origin().y;
+      direction = ray.direction().y;
+      break;
+    case 2:
+      origin = ray.origin().z;
+      direction = ray.direction().z;
+      break;
+  }
+
+  return (position - origin) / direction;
 }
 
 bool operator ==(const Vector &a, const Vector &b) {

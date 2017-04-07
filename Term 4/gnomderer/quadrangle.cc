@@ -10,7 +10,20 @@ Quadrangle::Quadrangle(Point a, Point b, Point c, Point d, sf::Color color)
       cb_(b - c),
       cd_(d - c),
       normal_(Normed(Cross(ab_, ad_))),
-      color_(color) {}
+      color_(color) {
+  box_ = Box{
+    {
+      std::min(std::min(a.x, b.x), std::min(c.x, d.x)),
+      std::min(std::min(a.y, b.y), std::min(c.y, d.y)),
+      std::min(std::min(a.z, b.z), std::min(c.z, d.z))
+    },
+    {
+      std::max(std::max(a.x, b.x), std::max(c.x, d.x)),
+      std::max(std::max(a.y, b.y), std::max(c.y, d.y)),
+      std::max(std::max(a.z, b.z), std::max(c.z, d.z))
+    }
+  };
+}
 
 Vector Quadrangle::Normal(Point p) {
   return normal_;
