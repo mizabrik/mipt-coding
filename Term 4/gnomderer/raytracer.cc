@@ -1,14 +1,18 @@
 #include "raytracer.h"
 
+#include <functional>
 #include <limits>
 #include <cmath>
+#include <iostream>
 
 #include <SFML/Graphics/Image.hpp>
 
 #include "geometry.h"
 
 RayTracer::RayTracer(std::vector<Entity *> scene, Real base_illuminance)
-   : scene_(scene), base_illuminance_(base_illuminance), kd_tree_(scene) {}
+   : scene_(scene), base_illuminance_(base_illuminance), kd_tree_(scene) {
+     std::cout << "Built kd" << std::endl;
+   }
 
 void RayTracer::AddLightSource(Point position, Real intensity) {
   light_sources_.push_back(LightSource{position, intensity});
@@ -17,6 +21,21 @@ void RayTracer::AddLightSource(Point position, Real intensity) {
 sf::Image RayTracer::Render(Point observer, Screen screen,
                             unsigned int width, unsigned int height) {
   auto box = kd_tree_.root_->box;
+  //for (auto e : scene_)
+  //  std::cout << e << ' ';
+  //std::cout << std::endl;
+  std::function<void(KDTree::KDNode &, int)> dfs = [&dfs] (KDTree::KDNode &node, int i) ->void {
+    if (node.left) {
+      dfs(*node.left, i + 1);
+      dfs(*node.right, i + 1);
+    } else {
+      std::cout << "At " << i << ':';
+      for (auto e : node.entities_)
+        std::cout << e << ' ';
+      std::cout << std::endl;
+    }
+  };
+  dfs(*kd_tree_.root_, 0);
   sf::Image image;
   image.create(width, height, sf::Color::Black);
 
@@ -25,7 +44,7 @@ sf::Image RayTracer::Render(Point observer, Screen screen,
       Point pixel = screen.position + screen.x  * ((1 + 2 * x) / (2. * width))
                                     + screen.y * ((1 + 2 * y) / (2. * height));
       Ray ray(pixel, pixel - observer);
-      image.setPixel(x, y, GetColor(ray, 4));
+      image.setPixel(x, y, GetColor(ray, 1));
     }
   }
 

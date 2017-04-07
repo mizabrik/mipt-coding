@@ -49,6 +49,10 @@ int main(int argc, char **argv) {
   scene.push_back(new Quadrangle(Point{5, -2, -5}, Point{-5, -2, -5},
                                  Point{-5, 10, -5}, Point{5, 10, -5}, sf::Color::Yellow));
 
+  for (int i = 0; i < 1000; ++i) {
+    //scene.push_back(new Triangle(Point{-5. + 0.01 * i, 2, 20}, Point{-5.1 + 0.01 * i, 2, 20}, Point{-5+0.01*i, 1, 20}, sf::Color::Blue));
+  }
+
   Point observer{0, 0, -12};
   RayTracer::Screen screen{Point{-2, 1.5, 0}, Vector{4, 0, 0}, Vector{0, -3, 0}};
 

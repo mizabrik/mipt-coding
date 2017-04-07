@@ -24,15 +24,16 @@ void KDTree::Build(KDNode &node, int depth) {
   if (!depth || node.Size() < split_size)
     return;
 
-  node.Split();
-  Build(*node.left, depth - 1);
-  Build(*node.right, depth - 1);
+  if (node.Split()) {
+    Build(*node.left, depth - 1);
+    Build(*node.right, depth - 1);
+  }
 }
 
 KDTree::KDNode::KDNode(std::vector<Entity *> &&entities)
     : entities_(std::move(entities)) {}
 
-void KDTree::KDNode::Split() {
+bool KDTree::KDNode::Split() {
   auto dims = box.Dimensions();
   std::array<unsigned int, 3> axes{0, 1, 2};
   std::sort(begin(axes), end(axes), [dims] (unsigned int a, unsigned int b) {
@@ -67,7 +68,7 @@ void KDTree::KDNode::Split() {
           && std::abs(Balance(split_at(mid + 1))) <= balance) {
         l = mid + 1;
       } else if (balance < 0
-                 && std::abs(Balance(split_at(mid - 1))) <= -balance) {
+                 && mid > 0 && std::abs(Balance(split_at(mid - 1))) <= -balance) {
         r = mid - 1;
       } else {
         l = r = mid;
@@ -82,14 +83,20 @@ void KDTree::KDNode::Split() {
     std::vector<Entity *> before(begin, begin + Before(split));
     left = std::make_unique<KDNode>(std::move(before));
     left->box = box.Before(split);
-    std::vector<Entity *> after(end - After(split), end);
+    std::vector<Entity *> after;
+    for (auto e : entities_) {
+      if (e->BoundingBox().max[axis] > split.position)
+        after.push_back(e);
+    }
     right = std::make_unique<KDNode>(std::move(after));
     right->box = box.After(split);
 
     entities_ = std::vector<Entity *>();
 
-    return;
+    return true;
   }
+
+  return false;
 }
 
 int KDTree::KDNode::Before(SimplePlane split) const {
@@ -101,7 +108,7 @@ int KDTree::KDNode::Before(SimplePlane split) const {
 
 int KDTree::KDNode::After(SimplePlane split) const {
   auto is_after = [split] (Entity *e) {
-    return e->BoundingBox().max[split.axis] >= split.position;
+    return e->BoundingBox().max[split.axis] > split.position;
   };
   return std::count_if(entities_.begin(), entities_.end(), is_after);
 }

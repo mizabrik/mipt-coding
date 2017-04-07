@@ -13,7 +13,7 @@ class KDTree {
    public:
     KDNode(std::vector<Entity *> &&entities);
 
-    void Split();
+    bool Split();
 
     int Size() const;
 
@@ -33,7 +33,7 @@ class KDTree {
 
   std::unique_ptr<KDNode> root_;
 
-  unsigned int split_size = 5;
+  unsigned int split_size = 8;
 
  private:
   void Build(KDNode &node, int depth);
