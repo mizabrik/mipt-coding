@@ -136,6 +136,17 @@ Point operator +(const Point &p, const Vector &v) {
   return Point{p.x + v.x, p.y + v.y, p.z + v.z};
 }
 
+Real Vector::Axis(unsigned int axis) const {
+  switch (axis) {
+    case 0:
+      return x;
+    case 1:
+      return y;
+    case 2:
+      return z;
+  }
+};
+
 Vector & Vector::operator +=(const Vector &other) {
   x += other.x;
   y += other.y;

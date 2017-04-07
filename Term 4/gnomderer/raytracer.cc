@@ -4,6 +4,8 @@
 #include <limits>
 #include <cmath>
 #include <iostream>
+#include <thread>
+#include <atomic>
 
 #include <SFML/Graphics/Image.hpp>
 
@@ -19,35 +21,84 @@ void RayTracer::AddLightSource(Point position, Real intensity) {
 }
 
 sf::Image RayTracer::Render(Point observer, Screen screen,
-                            unsigned int width, unsigned int height) {
-  auto box = kd_tree_.root_->box;
-  //for (auto e : scene_)
-  //  std::cout << e << ' ';
-  //std::cout << std::endl;
-  std::function<void(KDTree::KDNode &, int)> dfs = [&dfs] (KDTree::KDNode &node, int i) ->void {
-    if (node.left) {
-      dfs(*node.left, i + 1);
-      dfs(*node.right, i + 1);
-    } else {
-      std::cout << "At " << i << ':';
-      for (auto e : node.entities_)
-        std::cout << e << ' ';
-      std::cout << std::endl;
+                            unsigned int width, unsigned int height,
+                            unsigned int antialiasing) {
+  auto raw_image = Render(observer, screen,
+                          antialiasing * width, antialiasing * height);
+
+  std::vector<Color> image_data(width * height);
+  std::atomic<int> pixel_id(0);
+
+  int concurrency = 0;// std::thread::hardware_concurrency(); 
+
+  auto worker = [&] {
+    int my_pixel = 0;
+    std::vector<Color> colors(antialiasing * antialiasing);
+    while ((my_pixel = pixel_id++) < width * height) {
+      unsigned int x = pixel_id % width;
+      unsigned int y = pixel_id / width;
+      y = pixel_id / width;
+      for (int i = 0; i < antialiasing; ++i) {
+        for (int j = 0; j < antialiasing; ++j) {
+          if (antialiasing * x + i >= antialiasing * width)
+            std::cout << "Bang x!" << x << std::endl;
+          if (antialiasing * y + j >= antialiasing * height) {
+            y = my_pixel / width;
+            std::cout << "Bang y!" << y << ' ' << width << ' ' << my_pixel << std::endl;
+          }
+          colors[i * antialiasing + j] = raw_image.getPixel(
+              antialiasing * x + i, antialiasing * y + j);
+        }
+      }
+
+      image_data[my_pixel] = Average(begin(colors), end(colors));
     }
   };
-  dfs(*kd_tree_.root_, 0);
-  sf::Image image;
-  image.create(width, height, sf::Color::Black);
 
-  for (unsigned int x = 0; x < width; ++x) {
-    for (unsigned int y = 0; y < height; ++y) {
+  std::vector<std::thread> workers;
+  for (int i = 1; i < concurrency; ++i) {
+    workers.emplace_back(worker);
+  }
+  worker();
+
+  for (auto &t : workers)
+    t.join();
+
+  sf::Image image;
+  image.create(width, height, (sf::Uint8 *) image_data.data());
+  return image;
+}
+
+sf::Image RayTracer::Render(Point observer, Screen screen,
+                            unsigned int width, unsigned int height) {
+  std::vector<Color> image_data(width * height);
+  std::atomic<int> pixel_id(0);
+
+  int concurrency = std::thread::hardware_concurrency(); 
+
+  auto worker = [&] {
+    int my_pixel = 0;
+    while ((my_pixel = pixel_id++) < width * height) {
+      unsigned int x = pixel_id % width;
+      unsigned int y = pixel_id / width;
       Point pixel = screen.position + screen.x  * ((1 + 2 * x) / (2. * width))
                                     + screen.y * ((1 + 2 * y) / (2. * height));
       Ray ray(pixel, pixel - observer);
-      image.setPixel(x, y, GetColor(ray, 1));
+      image_data[my_pixel] = GetColor(ray, 4);
     }
-  }
+  };
 
+  std::vector<std::thread> workers;
+  for (int i = 1; i < concurrency; ++i) {
+    workers.emplace_back(worker);
+  }
+  worker();
+
+  for (auto &t : workers)
+    t.join();
+
+  sf::Image image;
+  image.create(width, height, (sf::Uint8 *) image_data.data());
   return image;
 }
 
@@ -56,32 +107,42 @@ Entity * RayTracer::Trace(Ray ray, Point *intersection) const {
   KDTree::KDNode &root = *kd_tree_.root_;
   if (!root.box.Intersection(ray, &t_in, &t_out))
     return nullptr;
+  if (t_out <= 0)
+    return nullptr;
 
   return TraceNode(root, t_in, t_out, ray, intersection);
 };
 
 Entity * RayTracer::TraceNode(KDTree::KDNode &node, Real t_in, Real t_out,
                               Ray ray, Point *intersection) const {
-  if (t_out <= 0)
-    return nullptr;
   if (!node.left)
     return BruteTrace(ray, node.entities_, intersection);
 
-  Real t_mid = node.split.Intersection(ray);
+  SimplePlane split = node.split;
+  Real t_mid = split.Intersection(ray);
 
-  if (t_mid > t_in) {
-    auto target = TraceNode(*node.left, t_in, t_mid, ray, intersection);
-    if (target)
+  KDTree::KDNode *near = ray.direction().Axis(split.axis) >= 0 ? node.left.get() : node.right.get();
+  KDTree::KDNode *far = ray.direction().Axis(split.axis) >= 0 ? node.right.get() : node.left.get();
+
+  if (t_mid >= t_out) {
+    return TraceNode(*near, t_in, t_out, ray, intersection);
+  } else if (t_mid <= t_in) {
+    return TraceNode(*far, t_in, t_out, ray, intersection);
+  } else {
+    auto target = TraceNode(*near, t_in, t_mid, ray, intersection);
+    if (!target || Length(*intersection - ray.origin()) > t_mid) {
+      Point intersection2;
+      auto target2 = TraceNode(*far, t_mid, t_out, ray, &intersection2);
+      if (!target2) {
+        return target;
+      } else if (!target || Length(intersection2 - ray.origin()) < Length(*intersection - ray.origin())) {
+        *intersection = intersection2;
+        return target2;
+      }
+    } else {
       return target;
+    }
   }
-
-  if (t_mid < t_out) {
-    auto target = TraceNode(*node.right, t_mid, t_out, ray, intersection);
-    if (target)
-      return target;
-  }
-
-  return nullptr;
 }
 
 Entity * RayTracer::BruteTrace(Ray ray, const std::vector<Entity *> &entities, Point *intersection) const {

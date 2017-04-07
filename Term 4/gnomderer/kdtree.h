@@ -33,7 +33,7 @@ class KDTree {
 
   std::unique_ptr<KDNode> root_;
 
-  unsigned int split_size = 8;
+  unsigned int split_size = 4;
 
  private:
   void Build(KDNode &node, int depth);

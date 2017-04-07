@@ -27,6 +27,7 @@ sf::Image draw() {
 
 int main(int argc, char **argv) {
   unsigned int w = 800, h = 600;
+
   sf::RenderWindow window(sf::VideoMode(w, h), "Gnomderer");
 
   std::vector<Entity *> scene;
@@ -50,18 +51,18 @@ int main(int argc, char **argv) {
                                  Point{-5, 10, -5}, Point{5, 10, -5}, sf::Color::Yellow));
 
   for (int i = 0; i < 1000; ++i) {
-    //scene.push_back(new Triangle(Point{-5. + 0.01 * i, 2, 20}, Point{-5.1 + 0.01 * i, 2, 20}, Point{-5+0.01*i, 1, 20}, sf::Color::Blue));
+    scene.push_back(new Triangle(Point{-5. + 0.01 * i, 2, 20}, Point{-5.1 + 0.01 * i, 2, 20}, Point{-5+0.01*i, 1, 20}, sf::Color::Blue));
   }
 
   Point observer{0, 0, -12};
-  RayTracer::Screen screen{Point{-2, 1.5, 0}, Vector{4, 0, 0}, Vector{0, -3, 0}};
+  RayTracer::Screen screen{Point{-4, 3, 0}, Vector{8, 0, 0}, Vector{0, -6, 0}};
 
   RayTracer tracer(scene, 0.3);
   //tracer.AddLightSource(Point{-4, 0, 0}, 0.7);
   //tracer.AddLightSource(Point{-3, 0, 0}, 0.5);
   tracer.AddLightSource(Point{-5, 3, 0}, 2);
 
-  auto image = tracer.Render(observer, screen, w, h);
+  auto image = tracer.Render(observer, screen, w, h, 2);
   //auto image = draw();
   sf::Texture texture;
   texture.loadFromImage(image);

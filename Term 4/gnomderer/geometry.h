@@ -23,6 +23,8 @@ struct Vector {
   Vector & operator /=(const Real &c);
 
   Vector operator -() const;
+
+  Real Axis(unsigned int axis) const;
 };
 
 bool operator ==(const Vector &a, const Vector &b);

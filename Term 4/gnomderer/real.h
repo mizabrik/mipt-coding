@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-static const double EPS = 1e-6;
+static const double EPS = 1e-9;
 
 class Real {
  public:

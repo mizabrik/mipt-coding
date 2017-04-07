@@ -23,6 +23,10 @@ class RayTracer {
   void AddLightSource(Point position, Real intensity);
 
   sf::Image Render(Point observer, Screen screen,
+                   unsigned int width, unsigned int height,
+                   unsigned int antialiasing);
+
+  sf::Image Render(Point observer, Screen screen,
                    unsigned int width, unsigned int height);
 
  private:
