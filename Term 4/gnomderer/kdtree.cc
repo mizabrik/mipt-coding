@@ -9,7 +9,15 @@
 
 KDTree::KDTree(std::vector<Entity *> scene) {
   root_ = std::make_unique<KDNode>(std::move(scene));
-  Build(*root_, (int) std::ceil(2 * std::log2(root_->Size())));
+  if (root_->Size()) {
+    root_->box = root_->entities_[0]->BoundingBox();
+    for (auto e : root_->entities_) {
+      root_->box = BoxUnion(root_->box, e->BoundingBox());
+    }
+    Build(*root_, (int) std::ceil(2 * std::log2(root_->Size())));
+  } else {
+    root_->box = Box{{0, 0, 0}, {0, 0, 0}};
+  }
 }
 
 void KDTree::Build(KDNode &node, int depth) {
