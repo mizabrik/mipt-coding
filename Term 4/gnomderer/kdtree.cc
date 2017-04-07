@@ -34,52 +34,62 @@ KDTree::KDNode::KDNode(std::vector<Entity *> &&entities)
 
 void KDTree::KDNode::Split() {
   auto dims = box.Dimensions();
-  unsigned int axis = std::min_element(begin(dims), end(dims)) - begin(dims);
- 
-  auto comparator = [axis] (Entity *a, Entity *b) -> bool {
-    Box a_box = a->BoundingBox();
-    Box b_box = b->BoundingBox();
-    return a_box.min[axis] < b_box.min[axis]
-           || a_box.min[axis] == b_box.min[axis]
-              && a_box.max[axis] < b_box.max[axis];
-  };
-  std::sort(entities_.begin(), entities_.end(), comparator);
+  std::array<unsigned int, 3> axes{0, 1, 2};
+  std::sort(begin(axes), end(axes), [dims] (unsigned int a, unsigned int b) {
+    return dims[a] > dims[b];
+  });
 
-  std::vector<Real> splits;
-  for (auto entity : entities_)
-    splits.push_back(entity->BoundingBox().min[axis]);
+  for (auto axis : axes) { 
+    auto comparator = [axis] (Entity *a, Entity *b) -> bool {
+      Box a_box = a->BoundingBox();
+      Box b_box = b->BoundingBox();
+      return a_box.min[axis] < b_box.min[axis]
+             || a_box.min[axis] == b_box.min[axis]
+                && a_box.max[axis] < b_box.max[axis];
+    };
+    std::sort(entities_.begin(), entities_.end(), comparator);
 
-  auto split_at = [splits, axis] (int pos) {
-    return SimplePlane{axis, splits[pos]};
-  };
+    std::vector<Real> splits;
+    for (auto entity : entities_)
+      splits.push_back(entity->BoundingBox().min[axis]);
 
-  unsigned int l = 0, r = splits.size() - 1;
-  int balance;
-  while (l < r) {
-    auto mid = (l + r) / 2;
-    balance = Balance(split_at(mid));
+    auto split_at = [splits, axis] (int pos) {
+      return SimplePlane{axis, splits[pos]};
+    };
 
-    if (balance > 0
-        && std::abs(Balance(split_at(mid + 1))) <= balance) {
-      l = mid + 1;
-    } else if (balance < 0
-               && std::abs(Balance(split_at(mid - 1))) <= -balance) {
-      r = mid - 1;
-    } else {
-      l = r = mid;
+    unsigned int l = 0, r = splits.size() - 1;
+    int balance;
+    while (l < r) {
+      auto mid = (l + r) / 2;
+      balance = Balance(split_at(mid));
+
+      if (balance > 0
+          && std::abs(Balance(split_at(mid + 1))) <= balance) {
+        l = mid + 1;
+      } else if (balance < 0
+                 && std::abs(Balance(split_at(mid - 1))) <= -balance) {
+        r = mid - 1;
+      } else {
+        l = r = mid;
+      }
     }
+
+    split = split_at(l);
+    if (split.position <= box.min[axis] || split.position >= box.max[axis])
+      continue;
+
+    auto begin = entities_.begin(), end = entities_.end();
+    std::vector<Entity *> before(begin, begin + Before(split));
+    left = std::make_unique<KDNode>(std::move(before));
+    left->box = box.Before(split);
+    std::vector<Entity *> after(end - After(split), end);
+    right = std::make_unique<KDNode>(std::move(after));
+    right->box = box.After(split);
+
+    entities_ = std::vector<Entity *>();
+
+    return;
   }
-
-  split = split_at(l);
-  auto begin = entities_.begin(), end = entities_.end();
-  std::vector<Entity *> before(begin, begin + Before(split));
-  left = std::make_unique<KDNode>(std::move(before));
-  left->box = box.Before(split);
-  std::vector<Entity *> after(end, end - After(split));
-  right = std::make_unique<KDNode>(std::move(after));
-  right->box = box.After(split);
-
-  entities_ = std::vector<Entity *>();
 }
 
 int KDTree::KDNode::Before(SimplePlane split) const {

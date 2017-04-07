@@ -54,8 +54,8 @@ struct SimplePlane {
 };
 
 struct Box {
-  std::array<Real, 3> max;
   std::array<Real, 3> min;
+  std::array<Real, 3> max;
 
   std::array<Real, 3> Dimensions() const;
 

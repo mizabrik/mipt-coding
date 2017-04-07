@@ -8,7 +8,7 @@
 #include "geometry.h"
 
 RayTracer::RayTracer(std::vector<Entity *> scene, Real base_illuminance)
-   : scene_(scene), base_illuminance_(base_illuminance) {}
+   : scene_(scene), base_illuminance_(base_illuminance), kd_tree_(scene) {}
 
 void RayTracer::AddLightSource(Point position, Real intensity) {
   light_sources_.push_back(LightSource{position, intensity});
@@ -16,6 +16,7 @@ void RayTracer::AddLightSource(Point position, Real intensity) {
 
 sf::Image RayTracer::Render(Point observer, Screen screen,
                             unsigned int width, unsigned int height) {
+  auto box = kd_tree_.root_->box;
   sf::Image image;
   image.create(width, height, sf::Color::Black);
 
@@ -32,10 +33,43 @@ sf::Image RayTracer::Render(Point observer, Screen screen,
 }
 
 Entity * RayTracer::Trace(Ray ray, Point *intersection) const {
+  Real t_in, t_out;
+  KDTree::KDNode &root = *kd_tree_.root_;
+  if (!root.box.Intersection(ray, &t_in, &t_out))
+    return nullptr;
+
+  return TraceNode(root, t_in, t_out, ray, intersection);
+};
+
+Entity * RayTracer::TraceNode(KDTree::KDNode &node, Real t_in, Real t_out,
+                              Ray ray, Point *intersection) const {
+  if (t_out <= 0)
+    return nullptr;
+  if (!node.left)
+    return BruteTrace(ray, node.entities_, intersection);
+
+  Real t_mid = node.split.Intersection(ray);
+
+  if (t_mid > t_in) {
+    auto target = TraceNode(*node.left, t_in, t_mid, ray, intersection);
+    if (target)
+      return target;
+  }
+
+  if (t_mid < t_out) {
+    auto target = TraceNode(*node.right, t_mid, t_out, ray, intersection);
+    if (target)
+      return target;
+  }
+
+  return nullptr;
+}
+
+Entity * RayTracer::BruteTrace(Ray ray, const std::vector<Entity *> &entities, Point *intersection) const {
   Entity *target = nullptr;
   Real distance2(std::numeric_limits<double>::infinity());
 
-  for (Entity *entity : scene_) {
+  for (Entity *entity : entities) {
     Point new_intersection;
     if(entity->Intersection(ray, &new_intersection)) {
       Real new_distance2 = Length2(ray.origin() - new_intersection);
