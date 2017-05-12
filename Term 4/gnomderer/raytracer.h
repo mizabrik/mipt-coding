@@ -10,6 +10,7 @@
 #include "entity.h"
 #include "kdtree.h"
 
+
 class RayTracer {
  public:
   struct Screen {
@@ -18,9 +19,14 @@ class RayTracer {
     Vector y;
   };
 
-  RayTracer(std::vector<Entity *> scene, Real base_illuminance = 0);
+  struct LightSource {
+    Point position;
+    Real intensity;
+  };
 
-  void AddLightSource(Point position, Real intensity);
+  RayTracer(std::vector<Entity *> scene,
+            std::vector<LightSource> light_sources,
+            Real base_illuminance = 0);
 
   sf::Image Render(Point observer, Screen screen,
                    unsigned int width, unsigned int height,
@@ -30,11 +36,6 @@ class RayTracer {
                    unsigned int width, unsigned int height);
 
  private:
-  struct LightSource {
-    Point position;
-    Real intensity;
-  };
-
   Entity * Trace(Ray ray, Point *intersection) const;
   Entity * TraceNode(KDTree::KDNode &node, Real t_in, Real t_out,
                      Ray ray, Point *intersection) const;

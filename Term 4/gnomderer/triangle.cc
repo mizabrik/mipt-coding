@@ -2,12 +2,11 @@
 
 #include "geometry.h"
 
-Triangle::Triangle(Point a, Point b, Point c, sf::Color color)
+Triangle::Triangle(Point a, Point b, Point c)
     : a_(a),
       ab_(b - a),
       ac_(c - a),
-      normal_(Normed(Cross(ab_, ac_))),
-      color_(color) {
+      normal_(Normed(Cross(ab_, ac_))) {
   box_ = Box{
     {
       std::min(a.x, std::min(b.x, c.x)),
@@ -22,11 +21,11 @@ Triangle::Triangle(Point a, Point b, Point c, sf::Color color)
   };
 }
 
-Vector Triangle::Normal(Point p) {
+Vector Triangle::Normal(Point p) const {
   return normal_;
 }
 
-bool Triangle::Intersection(Ray ray, Point *intersection) {
+bool Triangle::Intersection(Ray ray, Point *intersection) const {
   Vector p = Cross(ray.direction(), ac_);
   Real det = Dot(ab_, p);
 
@@ -54,6 +53,13 @@ bool Triangle::Intersection(Ray ray, Point *intersection) {
   }
 };
 
-sf::Color Triangle::GetColor(Point p) {
-  return color_;
-};
+void Triangle::Barycentric(Point p, Real *u, Real *v) const {
+  Real d00 = Dot(ab_, ab_);
+  Real d01 = Dot(ab_, ac_);
+  Real d11 = Dot(ac_, ac_);
+  Real d20 = Dot(p - a_, ab_);
+  Real d21 = Dot(p - a_, ac_);
+  Real inv_det = 1 / (d00 * d11 - d01 * d01);
+  *v = (d11 * d20 - d01 * d21) * inv_det;
+  *u = (d00 * d21 - d01 * d20) * inv_det;
+}

@@ -2,15 +2,14 @@
 
 #include "geometry.h"
 
-Quadrangle::Quadrangle(Point a, Point b, Point c, Point d, sf::Color color)
+Quadrangle::Quadrangle(Point a, Point b, Point c, Point d)
     : a_(a),
       c_(c),
       ab_(b - a),
       ad_(d - a),
       cb_(b - c),
       cd_(d - c),
-      normal_(Normed(Cross(ab_, ad_))),
-      color_(color) {
+      normal_(Normed(Cross(ab_, ad_))) {
   box_ = Box{
     {
       std::min(std::min(a.x, b.x), std::min(c.x, d.x)),
@@ -25,11 +24,11 @@ Quadrangle::Quadrangle(Point a, Point b, Point c, Point d, sf::Color color)
   };
 }
 
-Vector Quadrangle::Normal(Point p) {
+Vector Quadrangle::Normal(Point p) const {
   return normal_;
 }
 
-bool Quadrangle::Intersection(Ray ray, Point *intersection) {
+bool Quadrangle::Intersection(Ray ray, Point *intersection) const {
   // http://graphics.cs.kuleuven.be/publications/LD05ERQIT/LD05ERQIT_paper.pdf
   Vector p = Cross(ray.direction(), ad_);
   Real det = Dot(ab_, p);
@@ -71,6 +70,27 @@ bool Quadrangle::Intersection(Ray ray, Point *intersection) {
   }
 }
 
-sf::Color Quadrangle::GetColor(Point p) {
-  return color_;
+sf::Color Quadrangle::GetColor(Point p) const {
+  /*Vector p = Cross(ray.direction(), ad_);
+  Real det = Dot(ab_, p);
+  if (det == 0)
+    return false;
+  Real inv_det = 1 / det;
+
+  Vector ao = ray.origin() - a_;
+  Real alpha = Dot(ao, p) * inv_det;
+  if (alpha < 0)
+    return false;
+
+  Vector q = Cross(ao, ab_);
+  Real beta = Dot(ray.direction(), q) * inv_det;
+  if (beta < 0) {
+    return false;
+  }
+
+  auto ac = c_ - a_;
+  if (normal_.x.abs() >= normal_.y.abs() && normal_.x.abs() >= normal_.z.abs()) {
+    ;
+  }*/
+  return material_.color;
 };

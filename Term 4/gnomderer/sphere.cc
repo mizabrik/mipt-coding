@@ -2,19 +2,19 @@
 
 #include "geometry.h"
 
-Sphere::Sphere(Point center, Real r, sf::Color color)
-    : center_(center), r_(r), color_(color) {
+Sphere::Sphere(Point center, Real r)
+    : center_(center), r_(r) {
   box_ = Box{
     {center.x - r, center.y - r, center.z - r},
     {center.x + r, center.y + r, center.z + r}
   };
 }
 
-Vector Sphere::Normal(Point p) {
+Vector Sphere::Normal(Point p) const {
   return Normed(p - center_);
 }
 
-bool Sphere::Intersection(Ray ray, Point *intersection) {
+bool Sphere::Intersection(Ray ray, Point *intersection) const {
   // t^2 + 2(P - 0, d) t + |P - O|^2 - R^2 = 0
   Real hf_b = Dot(ray.origin() - center_, ray.direction());
   Real c = Length2(ray.origin() - center_) - r_ * r_;
@@ -35,8 +35,4 @@ bool Sphere::Intersection(Ray ray, Point *intersection) {
   }
 
   return true;
-};
-
-sf::Color Sphere::GetColor(Point p) {
-  return color_;
 };

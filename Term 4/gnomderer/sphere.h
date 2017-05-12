@@ -5,18 +5,15 @@
 
 class Sphere : public Entity {
  public:
-  Sphere(Point center, Real r, sf::Color color);
+  Sphere(Point center, Real r);
 
-  virtual Vector Normal(Point p);
+  virtual Vector Normal(Point p) const;
 
-  virtual bool Intersection(Ray ray, Point *intersection);
-  
-  virtual sf::Color GetColor(Point p);
+  virtual bool Intersection(Ray ray, Point *intersection) const;
 
  private:
   Point center_;
   Real r_;
-  sf::Color color_;
 };
 
 #endif // SPHERE_H_

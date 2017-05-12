@@ -1,26 +1,43 @@
 #ifndef ENTITY_H_
 #define ENTITY_H_
 
-#include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Image.hpp>
 
+#include "color.h"
 #include "geometry.h"
 
 class Entity {
  public:
-  virtual Vector Normal(Point p) = 0;
+  struct Material {
+    Color color;
+    double opacity;
+    double reflectance;
+    double refractive_index;
+    sf::Image textrure;
+  };
 
-  virtual bool Intersection(Ray r, Point *intersection) = 0;
+  Entity();
+
+  virtual Vector Normal(Point p) const = 0;
+
+  virtual bool Intersection(Ray r, Point *intersection) const = 0;
   
-  virtual sf::Color GetColor(Point p) = 0;
+  virtual sf::Color GetColor(Point p) const;
 
   virtual Box BoundingBox() const;
 
+  double GetOpacity() const;
+
+  double GetReflectance() const;
+
+  double GetRefractiveIndex() const;
+
+  void SetMaterial(const Material &material);
+
   virtual ~Entity() {};
 
-  double alpha = 0;
-  double refraction = 0;
-
  protected:
+  Material material_;
   Box box_;
 };
 
