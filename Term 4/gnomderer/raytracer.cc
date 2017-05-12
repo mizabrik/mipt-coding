@@ -184,7 +184,7 @@ sf::Color RayTracer::GetColor(Ray ray, unsigned int depth) {
   }
 
   Color refracted_color;
-  if (opacity > 0) {
+  if (opacity < 1.0) {
     Real cos_phi = Dot(ray.direction(), normal);
     double k; // outside / inside
     if (cos_phi < 0) {

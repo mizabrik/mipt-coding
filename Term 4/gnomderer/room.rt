@@ -1,0 +1,147 @@
+viewport
+    origin 0 0 -12
+    topleft -4 3 0
+    bottomleft -4 -1.5 0
+    topright 4 3 0
+endviewport
+#viewport
+#    origin 0 0 -12
+#    topleft -2 1.5 0
+#    bottomleft -2 -1.5 0
+#    topright 2 1.5 0
+#endviewport
+
+materials
+    entry
+        name ball
+        color 0022ff
+        alpha 0.0
+        reflect 0.0
+        refract 0.41
+        #refract 1.5
+    endentry
+
+    entry
+        name gray
+        color c8c8c8
+        alpha 1
+        reflect 0
+        refract 0
+        #texture fillip.jpg
+        texture ground.jpg
+    endentry
+
+    entry
+        name green
+        color 00ff00
+        alpha 1
+        reflect 0
+        refract 0
+        texture trees.jpg
+    endentry
+
+    entry
+        name red
+        color ff0000
+        alpha 1
+        reflect 0
+        refract 0
+        texture trees.jpg
+    endentry
+
+    entry
+        name blue
+        color 0000ff
+        alpha 1
+        reflect 0
+        refract 0
+        texture trees.jpg
+    endentry
+
+    entry
+        name yellow
+        color ffff00
+        alpha 1
+        reflect 0
+        refract 0
+    endentry
+
+    entry
+        name sky
+        color ffff00
+        alpha 1
+        reflect 0
+        refract 0
+        texture sky.jpg
+    endentry
+endmaterials
+
+lights
+    reference
+        power 1
+        distance 1
+    endreference
+    point 
+        coords 0 3 0
+        power 2
+    endpoint
+endlights
+
+geometry
+    sphere
+        coords 0 -1 10
+        radius 1
+        material ball
+    endsphere
+
+    quadrangle
+        vertex -5 -2 -5
+        vertex 5 -2 -5
+        vertex 5 -2 15
+        vertex -5 -2 15
+        material gray
+    endquadrangle
+
+    quadrangle
+    #triangle
+        vertex 5 -2 15
+        #vertex -5 -2 15
+        vertex -5 -2 15
+        vertex -5 7 15
+        vertex 5 7 15
+        material green
+    endquadrangle
+    #endtriangle
+
+    quadrangle
+        vertex -5 -2 -5
+        vertex -5 -2 15
+        vertex -5 7 15
+        vertex -5 7 -5
+        material red
+    endquadrangle
+
+    quadrangle
+        vertex 5 -2 -5
+        vertex 5 -2 15
+        vertex 5 7 15
+        vertex 5 7 -5
+        material blue
+    endquadrangle
+
+    quadrangle
+        vertex -5 7 -5
+        vertex -5 7 15
+        vertex 5 7 15
+        vertex 5 7 -5
+        material sky
+    endquadrangle
+
+    quadrangle
+        vertex 5 -2 -5
+        vertex -5 -2 -5
+        vertex -5 10 -5
+        vertex 5 10 -5
+        material yellow
+    endquadrangle
+endgeometry

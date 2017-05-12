@@ -1,5 +1,7 @@
 #include "triangle.h"
 
+#include <cmath>
+
 #include "geometry.h"
 
 Triangle::Triangle(Point a, Point b, Point c)
@@ -62,4 +64,39 @@ void Triangle::Barycentric(Point p, Real *u, Real *v) const {
   Real inv_det = 1 / (d00 * d11 - d01 * d01);
   *v = (d11 * d20 - d01 * d21) * inv_det;
   *u = (d00 * d21 - d01 * d20) * inv_det;
+}
+
+sf::Color Triangle::GetColor(Point point) const {
+  auto &texture = material_.texture;
+  if (texture.getSize().x == 0 || texture.getSize().y == 0)
+    return material_.color;
+
+  Ray ray{point + -1 * normal_, normal_};
+  Vector p = Cross(ray.direction(), ac_);
+  Real det = Dot(ab_, p);
+
+  if (det == 0)
+      return Color::Black;
+  Real inv_det = 1 / det;
+
+  Vector oa = ray.origin() - a_;
+
+  Real u = Dot(oa, p) * inv_det;
+  if (u < 0 || u > 1)
+    return Color::Black;
+
+  Vector q = Cross(oa, ab_);
+  Real v = Dot(ray.direction(), q) * inv_det;
+  if (v < 0 || u + v > 1)
+    return Color::Black;
+
+  Real distance = Dot(ac_, q) * inv_det;
+  if (distance <= 0) {
+    return Color::Black;
+  }
+
+  int x = std::round((u * texture.getSize().x).value());
+  int y = std::round(((1 - u - v) * texture.getSize().y).value());
+
+  return texture.getPixel(x, y);
 }

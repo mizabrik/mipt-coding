@@ -40,6 +40,7 @@ bool operator >=(const Real &a, const Real &b);
 bool operator <(const Real &a, const Real &b);
 bool operator >(const Real &a, const Real &b);
 
-std::ostream& operator<< (std::ostream& s, const Real& x);
+std::ostream& operator<< (std::ostream& s, const Real &x);
+std::istream& operator>> (std::istream& s, Real &x);
 
 #endif // REAL_H_

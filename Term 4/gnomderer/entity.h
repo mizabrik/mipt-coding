@@ -13,7 +13,7 @@ class Entity {
     double opacity;
     double reflectance;
     double refractive_index;
-    sf::Image textrure;
+    sf::Image texture;
   };
 
   Entity();

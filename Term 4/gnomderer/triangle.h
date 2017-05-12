@@ -12,6 +12,8 @@ class Triangle : public Entity {
 
   virtual bool Intersection(Ray ray, Point *intersection) const;
 
+  virtual sf::Color GetColor(Point p) const;
+
   void Barycentric(Point p, Real *u, Real *v) const;
 
  private:

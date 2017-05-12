@@ -1,12 +1,14 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Image.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "geometry.h"
 #include "sphere.h"
 #include "triangle.h"
 #include "quadrangle.h"
 #include "raytracer.h"
+#include "rt.h"
 
 #include <limits>
 
@@ -26,15 +28,16 @@
 //}
 
 int main(int argc, char **argv) {
-  unsigned int w = 800, h = 600;
+  unsigned int w = 1360, h = 768;
 
   sf::RenderWindow window(sf::VideoMode(w, h), "Gnomderer");
 
+  /*
   std::vector<Entity *> scene;
   //scene.push_back(new Sphere(Point{0, 0, 20}, 4, sf::Color::Green));
   //scene.push_back(new Sphere(Point{-2, 0, 10}, 1, sf::Color::Red));
   //scene.push_back(new Triangle(Point{2, 2, 5}, Point{4, 2, 5}, Point{5, 2, 10}, sf::Color::Blue));
-  Entity::Material m1{Color::Red, 0.1, 0.0, 0.5};
+  Entity::Material m1{Color::Red, 0.1, 0.0, 1.5};
   scene.push_back(new Sphere(Point{0, -1, 10}, 1));
   scene.back()->SetMaterial(m1);
   //scene.push_back(new Quadrangle(Point{-1, -2, 10}, Point{1, -2, 10},
@@ -42,9 +45,13 @@ int main(int argc, char **argv) {
   Entity::Material m2{Color(200, 200, 200), 1.0, 0.0, 0.0};
   scene.push_back(new Quadrangle(Point{5, -2, 15}, Point{-5, -2, 15},
                                  Point{-5, -2, -5}, Point{5, -2, -5}));
-  scene.back()->SetMaterial(m2);
+  scene.back()->SetMaterial(m2); 
   scene.push_back(new Quadrangle(Point{5, -2, 15}, Point{-5, -2, 15},
-                                 Point{-5, 10, 15}, Point{5, 10, 15}));
+                                 Point{-5, 10, 15}, Point{5, 10, 15})); */
+  //Quadrangle(Point{5, -2, 15}, Point{-5, -2, 15},
+  //                               Point{-5, 10, 15}, Point{5, 10, 15}).GetColor({0, 0, 15});
+  //throw 0;
+  /*
   m2.color = Color::Green;
   scene.back()->SetMaterial(m2);
   scene.push_back(new Quadrangle(Point{-5, -2, 15}, Point{-5, 10, 15},
@@ -71,8 +78,16 @@ int main(int argc, char **argv) {
   RayTracer tracer(scene, {{Point{-5, 3, 0}, 2}}, 0.3);
   //tracer.AddLightSource(Point{-4, 0, 0}, 0.7);
   //tracer.AddLightSource(Point{-3, 0, 0}, 0.5);
+  */
+  std::string rt_name = argv[1]; 
+  std::ifstream inp(rt_name);
+  Rt rt(inp);
 
-  auto image = tracer.Render(observer, screen, w, h);
+  RayTracer tracer(rt.GetScene(), rt.GetLightSources(), 0.0);
+  auto image = tracer.Render(rt.GetObserver(), rt.GetScreen(), w, h, 2);
+  image.saveToFile("rendered.png");
+  return 0;
+  //auto image = tracer.Render(observer, screen, w, h);
   //auto image = draw();
   sf::Texture texture;
   texture.loadFromImage(image);

@@ -15,7 +15,7 @@ class Quadrangle : public Entity {
 
  private:
   Point a_, c_;
-  Vector ab_, ad_;
+  Vector ab_, ad_, ac_;
   Vector cb_, cd_;
   Vector normal_;
 };

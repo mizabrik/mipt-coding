@@ -99,6 +99,13 @@ bool operator >(const Real &a, const Real &b) {
   return (a - b).sign() > 0;
 }
 
-std::ostream& operator<< (std::ostream& s, const Real& x) {
+std::ostream& operator<< (std::ostream& s, const Real &x) {
   return s << x.value();
+}
+
+std::istream& operator>> (std::istream& s, Real &x) {
+  double value;
+  s >> value;
+  x = value;
+  return s;
 }
