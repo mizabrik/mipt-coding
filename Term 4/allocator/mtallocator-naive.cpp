@@ -1,17 +1,15 @@
+#include <cassert>
 #include <cstdlib>
 
 #include <algorithm>
 #include <atomic>
 #include <map>
 #include <mutex>
-#include <limits>
 #include <thread>
 #include <vector>
 
-template <int SBSize, int FullnessKinds = 1>
+template <int SBSize>
 class MtAllocator {
-  static_assert(SBSize <= std::numeric_limits<unsigned short>::max() + 1,
-                "Superblock must be addressable with unsigned int");
  public:
   MtAllocator(int heap_count)
     : heaps_(1 + heap_count) {}
@@ -20,10 +18,10 @@ class MtAllocator {
     if (size * 2 > SBSize) {
       return AllocateBig(size);
     }
+    size_t sk = Log2(size);
 
     auto &heap = GetHeap();
     std::lock_guard<Heap> heap_lock(heap);
-    size_t sk = Log2(size);
 
     void *block = heap.Allocate(sk);
     Superblock *sb = nullptr;
@@ -71,8 +69,9 @@ class MtAllocator {
 
     auto allocated = heap->GetAllocated();
     auto used = heap->GetUsed();
+
     if (used < allocated - kReserveSize * SBSize
-        && 4 * used < 3 * allocated) {
+        && 2 * used < 1 * allocated) {
       std::lock_guard<Heap> global_lock(heaps_[0]);
       auto free_sb = heap->ReleaseSuperblock();
       if (free_sb)
@@ -89,9 +88,7 @@ class MtAllocator {
       : block_size_(1 << size_kind),
         size_kind_(size_kind),
         used_(0),
-        owner_(nullptr),
-        next_(nullptr),
-        prev_(nullptr) {
+        owner_(nullptr) {
       unsigned short block_count = SBSize / block_size_;
       data_ = std::malloc(sizeof(unsigned short) * block_count +
                           SBSize + sizeof(Superblock *) * block_count);
@@ -114,26 +111,10 @@ class MtAllocator {
       return block_size_;
     }
 
-    Superblock * GetNext() const {
-      return next_;
-    }
-
-    void SetNext(Superblock *next) {
-      next_ = next;
-    }
-
-    Superblock * GetPrev() const {
-      return prev_;
-    }
-
-    void SetPrev(Superblock *prev) {
-      prev_ = prev;
-    }
-
     void * GetBlock() {
+      assert(used_ < SBSize);
       void *block = GetBlockAddress(free_block_);
       free_block_ = next_blocks_[free_block_];
-
 
       used_ += block_size_;
 
@@ -148,21 +129,8 @@ class MtAllocator {
       used_ -= block_size_;
     }
 
-    // Returns value from 0 to FullnessKinds + 1
-    int GetFullnessKind() const {
-      if (used_ == 0) {
-        return 0;
-      } else {
-        return 1 + (FullnessKinds * used_) / SBSize;
-      }
-    }
-
     size_t GetSizeKind() const {
       return size_kind_;
-    }
-
-    size_t GetUsed() const {
-      return used_;
     }
 
     Heap * GetOwner() const {
@@ -171,6 +139,10 @@ class MtAllocator {
 
     void SetOwner(Heap *new_owner) {
       owner_ = new_owner;
+    }
+
+    size_t GetUsed() const {
+      return used_;
     }
 
    private:
@@ -186,9 +158,6 @@ class MtAllocator {
 
     std::atomic<Heap *> owner_;
 
-    Superblock *next_;
-    Superblock *prev_;
-
     void *data_;
     unsigned short *next_blocks_;
     unsigned short free_block_;
@@ -198,39 +167,40 @@ class MtAllocator {
   class Heap {
    public:
     Heap()
-     : superblocks_(Log2(SBSize),
-                    std::vector<Superblock *>(FullnessKinds + 2, nullptr)),
+     : superblocks_(Log2(SBSize)),
+       last_freed_(Log2(SBSize), nullptr),
+       position_(Log2(SBSize), 0),
        allocated_(0),
        used_(0) {}
 
     ~Heap() {
       for (auto &sk_superblocks : superblocks_) {
-        for (auto &list : sk_superblocks) {
-          while (list) {
-            auto next = list->GetNext();
-            delete list;
-            list = next;
-          }
+        for (auto sb : sk_superblocks) {
+          delete sb;
         }
       }
     }
 
     void * Allocate(size_t size_kind) {
+      auto &lf = last_freed_[size_kind];
+      if (lf) {
+        assert(lf->GetUsed() < SBSize);
+        void *block = lf->GetBlock();
+        if (lf->GetUsed() == SBSize) {
+          lf = nullptr;
+        }
+        return block;
+      }
+
       auto &sk_superblocks = superblocks_[size_kind];
-
-      for (int fk = FullnessKinds; fk > 0; --fk) {
-        Superblock *sb = sk_superblocks[fk];
-        if (sb != nullptr) {
+      auto sb_count = sk_superblocks.size();
+      for (size_t shift = 0; shift < sb_count; ++shift) {
+        size_t i = (position_[size_kind] + shift) % sb_count;
+        auto sb = sk_superblocks[i];
+        if (sb->GetUsed() < SBSize) {
           void *block = sb->GetBlock();
-
-          auto new_fk = sb->GetFullnessKind();
-          if (new_fk != fk) {
-            PopSuperblock(sk_superblocks[fk]);
-            PushSuperblock(sk_superblocks[new_fk], sb);
-          }
-
-          used_ += sb->GetBlockSize();
-
+          used_ += 1 << size_kind;
+          position_[size_kind] = i;
           return block;
         }
       }
@@ -240,20 +210,9 @@ class MtAllocator {
 
     void Free(void *block) {
       auto sb = GetBlockOwner(block);
-
-      auto sk = sb->GetSizeKind();
-      auto fk = sb->GetFullnessKind();
-
       sb->FreeBlock(block);
 
-      if (sb->GetPrev() != nullptr) {
-        CutSuperblock(sb);
-      } else {
-        PopSuperblock(superblocks_[sk][fk]);
-      }
-
-      auto new_fk = sb->GetFullnessKind();
-      PushSuperblock(superblocks_[sk][new_fk], sb);
+      last_freed_[sb->GetSizeKind()] = sb;
 
       used_ -= sb->GetBlockSize();
     }
@@ -261,30 +220,31 @@ class MtAllocator {
     void AcquireSuperblock(Superblock *sb) {
       sb->SetOwner(this);
       auto sk = sb->GetSizeKind();
-      auto fk = sb->GetFullnessKind();
-      PushSuperblock(superblocks_[sk][fk], sb);
 
+      superblocks_[sk].push_back(sb);
+      std::swap(superblocks_[sk].front(), superblocks_[sk].back());
       allocated_ += SBSize;
       used_ += sb->GetUsed();
     }
 
     Superblock * ReleaseSuperblock(size_t size_kind) {
-      for (int fk = 0; fk < FullnessKinds + 1; ++fk) {
-        if (superblocks_[size_kind][fk] != nullptr) {
-            auto sb = PopSuperblock(superblocks_[size_kind][fk]);
-            ReleaseSuperblock(sb);
-            return sb;
-        }
+      if (superblocks_[size_kind].empty()) {
+        return nullptr;
+      } else {
+        auto sb = superblocks_[size_kind].back();
+        superblocks_[size_kind].pop_back();
+        ReleaseSuperblock(sb);
+        return sb;
       }
-
-      return nullptr;
     }
 
     Superblock * ReleaseSuperblock() {
-      for (int fk = 0; fk < FullnessKinds + 1; ++fk) {
-        for (auto &sbs : superblocks_) {
-          if (sbs[fk] != nullptr) {
-            auto sb = PopSuperblock(sbs[fk]);
+      for (auto &sk_superblocks : superblocks_) {
+        for (auto &candidate : sk_superblocks) {
+          if (candidate->GetUsed() < SBSize) {
+            auto sb = candidate;
+            std::swap(candidate, sk_superblocks.back());
+            sk_superblocks.pop_back();
             ReleaseSuperblock(sb);
             return sb;
           }
@@ -311,49 +271,19 @@ class MtAllocator {
     }
 
    private:
-    void CutSuperblock(Superblock *sb) {
-      auto next = sb->GetNext();
-      auto prev = sb->GetPrev();
-      sb->SetNext(nullptr);
-      sb->SetPrev(nullptr);
-
-      if (next != nullptr) {
-        next->SetPrev(prev);
-      } 
-      if (prev != nullptr) {
-        prev->SetNext(next);
-      }
-    }
-
-    Superblock * PopSuperblock(Superblock *&list) {
-      auto sb = list;
-      auto next = sb->GetNext();
-      sb->SetNext(nullptr);
-
-      if (next != nullptr) {
-        next->SetPrev(nullptr);
-      }
-      list = next;
-
-      return sb;
-    }
-
     void ReleaseSuperblock(Superblock *sb) {
       allocated_ -= SBSize;
       used_ -= sb->GetUsed();
-    }
-
-    void PushSuperblock(Superblock *&list, Superblock *sb) {
-      sb->SetNext(list);
-      if (list != nullptr) {
-        list->SetPrev(sb);
-      }
-      list = sb;
+      auto sk = sb->GetSizeKind();
+      if (last_freed_[sk] == sb)
+        last_freed_[sk] = nullptr;
     }
 
     std::mutex lock_;
 
     std::vector<std::vector<Superblock *>> superblocks_;
+    std::vector<Superblock *> last_freed_;
+    std::vector<size_t> position_;
 
     size_t allocated_;
     size_t used_;
@@ -368,11 +298,11 @@ class MtAllocator {
 
   void * AllocateBig(size_t size) {
     uint8_t *data = (uint8_t *) std::malloc(size + sizeof(Superblock *));
-    data += sizeof(Superblock *);
 
     if (data != nullptr) {
+      data += sizeof(Superblock *);
       SetBlockOwner(data, nullptr);
-      return  data;
+      return data;
     } else {
       return nullptr;
     }
@@ -407,9 +337,9 @@ class MtAllocator {
   int heap_count_;
 };
 
-static MtAllocator<1 << 16> & GetAllocator() {
+static MtAllocator<1 << 14> & GetAllocator() {
   static int heap_count = std::max(std::thread::hardware_concurrency(), 1U) * 2;
-  static MtAllocator<1 << 16> allocator(heap_count);
+  static MtAllocator<1 << 14> allocator(heap_count);
   return allocator;
 }
 
